@@ -1,9 +1,21 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Webpack App</title>
-  </head>
-  <body>
-  <script type="text/javascript" src="bundle.js"></script></body>
+<head>
+  <meta charset="UTF-8">
+  <title>CAEUS</title>
+</head>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<body>
+  <script type="text/javascript">
+    import { createApp, ref } from 'vue'
+    
+    createApp({
+      setup() {
+        return {
+          count: ref(0)
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
 </html>

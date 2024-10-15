@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+import ArticlesBind from '@/articles/ArticlesBind.vue'
 </script>
-
 <template>
   <main>
-    <TheWelcome />
+    <ArticlesBind />
   </main>
 </template>

@@ -17,18 +17,17 @@ export namespace DevtoClient {
 export class DefaultDevtoClient implements DevtoClient {
   constructor(private readonly config: DefaultDevtoClient.Config) {}
   articles(username: string, per_page?: number, page?: number): Promise<ArticleSample[]> {
-    const params: Record<string, string> = {
-      username,
-      __token__: String(+new Date())
-    }
+    const params = new URLSearchParams()
     if (per_page != undefined) {
-      params.per_page = String(per_page)
+      params.append('per_page', String(per_page))
     }
     if (page != undefined) {
-      params.page = String(page)
+      params.append('page', String(page))
     }
+    params.append('username', (+new Date()).toString()) // Fucking trick to avoid some stupid cache which I don't understand
+    params.append('username', username) // Fucking trick to avoid some stupid cache which I don't understand
 
-    return fetch(`${this.config.base_url}/articles?${new URLSearchParams(params)}`).then((r) => {
+    return fetch(`${this.config.base_url}/articles?${params}`).then((r) => {
       if (r.ok) return r.json()
       return r.json().then((r) => Promise.reject(r))
     })

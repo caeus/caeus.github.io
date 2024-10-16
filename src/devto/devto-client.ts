@@ -18,7 +18,8 @@ export class DefaultDevtoClient implements DevtoClient {
   constructor(private readonly config: DefaultDevtoClient.Config) {}
   articles(username: string, per_page?: number, page?: number): Promise<ArticleSample[]> {
     const params: Record<string, string> = {
-      username
+      username,
+      __token__: String(+new Date())
     }
     if (per_page != undefined) {
       params.per_page = String(per_page)
@@ -26,12 +27,8 @@ export class DefaultDevtoClient implements DevtoClient {
     if (page != undefined) {
       params.page = String(page)
     }
-    const headers = new Headers()
-    headers.append('Pragma', 'no-cache')
-    headers.append('Cache-Control', 'no-cache')
-    return fetch(`${this.config.base_url}/articles?${new URLSearchParams(params)}`, {
-      headers
-    }).then((r) => {
+
+    return fetch(`${this.config.base_url}/articles?${new URLSearchParams(params)}`).then((r) => {
       if (r.ok) return r.json()
       return r.json().then((r) => Promise.reject(r))
     })

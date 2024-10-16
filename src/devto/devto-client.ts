@@ -27,9 +27,11 @@ export class DefaultDevtoClient implements DevtoClient {
       params.page = String(page)
     }
     const headers = new Headers()
-    headers.append('Pragma','no-cache')
-    headers.append('Cache-Control','no-cache')
-    return fetch(`${this.config.base_url}/articles?${new URLSearchParams(params)}`).then((r) => {
+    headers.append('Pragma', 'no-cache')
+    headers.append('Cache-Control', 'no-cache')
+    return fetch(`${this.config.base_url}/articles?${new URLSearchParams(params)}`, {
+      headers
+    }).then((r) => {
       if (r.ok) return r.json()
       return r.json().then((r) => Promise.reject(r))
     })

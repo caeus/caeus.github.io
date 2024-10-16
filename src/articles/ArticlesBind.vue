@@ -8,7 +8,6 @@ if (!fetcher) {
 }
 const articles = ref<ArticleSample[]>([])
 fetcher.fetch().then((as) => {
-  console.log('showing articles', as)
   articles.value = as
 })
 </script>

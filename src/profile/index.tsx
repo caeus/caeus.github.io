@@ -36,8 +36,15 @@ function DevtoIcon() {
 
 export function Profile() {
   return (
-    <div className="mb-12">
-      <h1 className="text-3xl font-bold tracking-tight mb-1">Alejandro Navas</h1>
+    <div>
+      <div className="flex items-center gap-4 mb-4">
+        <img
+          src="/avatar.jpg"
+          alt="Alejandro Navas"
+          className="w-16 h-16 rounded-full object-cover"
+        />
+        <h1 className="text-3xl font-bold tracking-tight">Alejandro Navas</h1>
+      </div>
       <p className="text-gray-500 dark:text-gray-400 mb-4 whitespace-pre-line">
         {`Writes code. Sometimes, it even works.\nOver-engineering is bad, under-engineering is worse.\nSpends too much time naming things.\nHas dogs. They do not respect him.`}
       </p>

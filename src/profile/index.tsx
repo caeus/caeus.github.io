@@ -1,92 +1,44 @@
-function GithubIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-    </svg>
-  )
+import type { ReactNode } from 'react'
+
+export interface ProfileLink {
+  href: string
+  label: string
+  icon: ReactNode
 }
 
-function LinkedInIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-      <rect x="2" y="9" width="4" height="12" />
-      <circle cx="4" cy="4" r="2" />
-    </svg>
-  )
+export interface ProfileConfig {
+  name: string
+  bio: string
+  avatarUrl: string
+  links: ProfileLink[]
 }
 
-function StackOverflowIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2.913 16.041v6.848h17.599v-6.848M7.16 18.696h8.925M7.65 13.937l8.675 1.8M9.214 9.124l8.058 3.758M12.086 4.65l6.849 5.66M15.774 1.111l5.313 7.162" />
-    </svg>
-  )
-}
-
-function DevtoIcon() {
-  return (
-    <img
-      src="https://media2.dev.to/dynamic/image/quality=100/https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/logos/resized_logo_UQww2soKuUsjaOGNB38o.png"
-      alt="dev.to"
-      className="w-5 h-5 dark:invert"
-    />
-  )
-}
-
-export function Profile() {
-  return (
-    <div>
-      <div className="flex items-center gap-4 mb-4">
-        <img
-          src="/avatar.jpg"
-          alt="Alejandro Navas"
-          className="w-16 h-16 rounded-full object-cover"
-        />
-        <h1 className="text-3xl font-bold tracking-tight">Alejandro Navas</h1>
-      </div>
-      <p className="text-gray-500 dark:text-gray-400 mb-4 whitespace-pre-line">
-        {`Writes code. Sometimes, it even works.\nOver-engineering is bad, under-engineering is worse.\nSpends too much time naming things.\nHas dogs. They do not respect him.`}
-      </p>
-      <div className="flex gap-4">
-        <a
-          href="https://github.com/caeus"
-          target="_blank"
-          rel="noreferrer"
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-          aria-label="GitHub"
-        >
-          <GithubIcon />
-        </a>
-        <a
-          href="https://dev.to/caeus"
-          target="_blank"
-          rel="noreferrer"
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-          aria-label="dev.to"
-        >
-          <DevtoIcon />
-        </a>
-        <a
-          href="https://stackoverflow.com/users/2142728/caeus"
-          target="_blank"
-          rel="noreferrer"
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-          aria-label="Stack Overflow"
-        >
-          <StackOverflowIcon />
-        </a>
-        <a
-          href="https://linkedin.com/in/caeus"
-          target="_blank"
-          rel="noreferrer"
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-          aria-label="LinkedIn"
-        >
-          <LinkedInIcon />
-        </a>
-      </div>
+export const connectProfile = (config: ProfileConfig) => () => (
+  <div>
+    <div className="flex items-center gap-4 mb-4">
+      <img
+        src={config.avatarUrl}
+        alt={config.name}
+        className="w-16 h-16 rounded-full object-cover"
+      />
+      <h1 className="text-3xl font-bold tracking-tight">{config.name}</h1>
     </div>
-  )
-}
-export type Profile = typeof Profile
+    <p className="text-gray-500 dark:text-gray-400 mb-4 whitespace-pre-line">{config.bio}</p>
+    <div className="flex gap-4">
+      {config.links.map((link) => (
+        <a
+          key={link.href}
+          href={link.href}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={link.label}
+          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+        >
+          {link.icon}
+        </a>
+      ))}
+    </div>
+  </div>
+)
+
+export type Profile = ReturnType<typeof connectProfile>

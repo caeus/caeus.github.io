@@ -11,7 +11,11 @@ export const profileConfig: ProfileConfig = {
   links: [
     { href: 'https://github.com/caeus', label: 'GitHub', icon: <GithubIcon /> },
     { href: 'https://dev.to/caeus', label: 'dev.to', icon: <DevtoIcon /> },
-    { href: 'https://stackoverflow.com/users/2142728/caeus', label: 'Stack Overflow', icon: <StackOverflowIcon /> },
-    { href: 'https://linkedin.com/in/caeus', label: 'LinkedIn', icon: <LinkedInIcon /> },
-  ],
+    {
+      href: 'https://stackoverflow.com/users/2142728/caeus',
+      label: 'Stack Overflow',
+      icon: <StackOverflowIcon />
+    },
+    { href: 'https://linkedin.com/in/caeus', label: 'LinkedIn', icon: <LinkedInIcon /> }
+  ]
 }

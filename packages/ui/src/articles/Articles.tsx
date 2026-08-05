@@ -70,7 +70,9 @@ export function ArticlesView({ state }: { state: State }) {
               <span>·</span>
               <span>{a.reading_time_minutes} min read</span>
               {a.tag_list.map((tag) => (
-                <Badge key={tag} variant="secondary">{tag}</Badge>
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
               ))}
             </div>
           </div>

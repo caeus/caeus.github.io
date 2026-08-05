@@ -1,4 +1,3 @@
-import { wire } from "./wire";
-
+import { wire } from './wire'
 
 wire()

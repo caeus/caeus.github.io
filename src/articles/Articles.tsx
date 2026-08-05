@@ -2,19 +2,31 @@ import { useEffect, useState } from 'react'
 import type { ArticleFetcher, ArticleSample } from './articles-fetcher'
 import { run } from '@/utils'
 
+type State =
+  | { status: 'loading' }
+  | { status: 'ready'; articles: readonly ArticleSample[] }
+  | { status: 'error'; message: string }
+
 export const connectArticles = (View: ArticlesView, fetcher: ArticleFetcher) => () => {
-  const [articles, setArticles] = useState<readonly ArticleSample[] | null>(null)
+  const [state, setState] = useState<State>({ status: 'loading' })
 
   useEffect(() => {
-    run(async () => setArticles(await fetcher.fetch()))
+    run(async () => {
+      try {
+        const articles = await fetcher.fetch()
+        setState({ status: 'ready', articles })
+      } catch (e) {
+        setState({ status: 'error', message: e instanceof Error ? e.message : 'Unknown error' })
+      }
+    })
   }, [fetcher])
 
-  return <View articles={articles} />
+  return <View state={state} />
 }
 export type Articles = ReturnType<typeof connectArticles>
 
-export function ArticlesView({ articles }: { articles: readonly ArticleSample[] | null }) {
-  if (articles === null) {
+export function ArticlesView({ state }: { state: State }) {
+  if (state.status === 'loading') {
     return (
       <ul className="space-y-3">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -24,9 +36,17 @@ export function ArticlesView({ articles }: { articles: readonly ArticleSample[] 
     )
   }
 
+  if (state.status === 'error') {
+    return (
+      <p className="text-red-500 dark:text-red-400 text-sm">
+        Failed to load articles: {state.message}
+      </p>
+    )
+  }
+
   return (
     <ul className="space-y-3">
-      {articles.map((a) => (
+      {state.articles.map((a) => (
         <li key={a.id}>
           <a
             href={a.url}

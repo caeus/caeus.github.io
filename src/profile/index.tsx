@@ -6,6 +6,24 @@ function GithubIcon() {
   )
 }
 
+function LinkedInIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+      <rect x="2" y="9" width="4" height="12" />
+      <circle cx="4" cy="4" r="2" />
+    </svg>
+  )
+}
+
+function StackOverflowIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.913 16.041v6.848h17.599v-6.848M7.16 18.696h8.925M7.65 13.937l8.675 1.8M9.214 9.124l8.058 3.758M12.086 4.65l6.849 5.66M15.774 1.111l5.313 7.162" />
+    </svg>
+  )
+}
+
 function DevtoIcon() {
   return (
     <img
@@ -41,6 +59,24 @@ export function Profile() {
           aria-label="dev.to"
         >
           <DevtoIcon />
+        </a>
+        <a
+          href="https://stackoverflow.com/users/2142728/caeus"
+          target="_blank"
+          rel="noreferrer"
+          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          aria-label="Stack Overflow"
+        >
+          <StackOverflowIcon />
+        </a>
+        <a
+          href="https://linkedin.com/in/caeus"
+          target="_blank"
+          rel="noreferrer"
+          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          aria-label="LinkedIn"
+        >
+          <LinkedInIcon />
         </a>
       </div>
     </div>

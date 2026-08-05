@@ -1,5 +1,5 @@
-import type { ProfileConfig } from '@/profile/index'
-import { GithubIcon, DevtoIcon, StackOverflowIcon, LinkedInIcon } from '@/profile/icons'
+import type { ProfileConfig } from '#profile/index'
+import { GithubIcon, DevtoIcon, StackOverflowIcon, LinkedInIcon } from '#profile/icons'
 
 export const profileConfig: ProfileConfig = {
   name: 'Alejandro Navas',

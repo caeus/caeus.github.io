@@ -1,6 +1,6 @@
-import type { Articles } from '@/articles/Articles'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+import type { Articles } from '#articles/Articles'
+import { Card, CardContent, CardHeader } from '#components/ui/card'
+import { Separator } from '#components/ui/separator'
 
 export const connectArticlesPage = (Articles: Articles) => () => (
   <Card>

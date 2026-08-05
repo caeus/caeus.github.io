@@ -1,0 +1,21 @@
+{
+  "name": "@caeus/common",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#*": "./src/*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@orpc/contract": "^1.14.14",
+    "@orpc/zod": "^1.14.14",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tsconfig/strictest": "^2.0.8",
+    "typescript": "^6.0.3"
+  }
+}

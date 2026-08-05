@@ -1,4 +1,4 @@
-import { DefaultDevtoClient, type ArticleSample } from '@/devto/devto-client'
+import { DefaultDevtoClient, type ArticleSample } from '#devto/devto-client'
 
 export type { ArticleSample }
 

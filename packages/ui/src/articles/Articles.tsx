@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { ArticleFetcher, ArticleSample } from './articles-fetcher'
-import { run } from '@/utils/index'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import { run } from '#utils/index'
+import { Badge } from '#components/ui/badge'
+import { Separator } from '#components/ui/separator'
 
 type State =
   | { status: 'loading' }
   | { status: 'ready'; articles: readonly ArticleSample[] }
   | { status: 'error'; message: string }
 
-export const connectArticles = (View: ArticlesView, fetcher: ArticleFetcher) => () => {
+export const connectArticles = (fetcher: ArticleFetcher) => () => {
   const [state, setState] = useState<State>({ status: 'loading' })
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export const connectArticles = (View: ArticlesView, fetcher: ArticleFetcher) => 
     })
   }, [fetcher])
 
-  return <View state={state} />
+  return <ArticlesView state={state} />
 }
 export type Articles = ReturnType<typeof connectArticles>
 

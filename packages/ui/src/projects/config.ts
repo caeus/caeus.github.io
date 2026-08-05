@@ -1,4 +1,4 @@
-import type { ProjectConfig } from '@/projects/index'
+import type { ProjectConfig } from '#projects/index'
 
 export const projectsConfig: readonly ProjectConfig[] = [
   {

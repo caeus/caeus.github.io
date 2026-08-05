@@ -1,3 +1,3 @@
 import { wire } from './wire'
 
-wire()
+wire().catch(console.error)

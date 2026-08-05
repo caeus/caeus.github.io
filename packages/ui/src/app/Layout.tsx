@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom'
-import type { Profile } from '@/profile/index'
-import { Card, CardContent } from '@/components/ui/card'
+import type { Profile } from '#profile/index'
+import { Card, CardContent } from '#components/ui/card'
 import { Nav } from './Nav'
 
 export const connectLayout = (Profile: Profile) => () => (

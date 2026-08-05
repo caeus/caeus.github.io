@@ -1,7 +1,5 @@
 {
   "name": "caeus-github-io",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ]
+  "packageManager": "pnpm@11.20.0"
 }

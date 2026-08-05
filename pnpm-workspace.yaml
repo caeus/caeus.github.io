@@ -1,0 +1,6 @@
+packages:
+  - 'packages/*'
+allowedDeprecatedVersions: {}
+allowNonAppliedPatches: false
+allowBuilds:
+  esbuild: true

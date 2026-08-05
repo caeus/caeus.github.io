@@ -1,10 +1,10 @@
 .PHONY: dev build push format lint
 
 dev:
-	yarn workspace ui dev
+	moon run ui:dev
 
-build: format
-	yarn workspace ui build
+build:
+	moon run ui:build
 
 push: build
 	git add -A
@@ -12,7 +12,7 @@ push: build
 	git push
 
 format:
-	yarn workspace ui format
+	moon run ui:format
 
 lint:
-	yarn workspace ui lint
+	moon run ui:lint

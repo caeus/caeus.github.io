@@ -1,0 +1,19 @@
+language: 'typescript'
+stack: 'frontend'
+
+tasks:
+  dev:
+    command: 'vite'
+    type: 'run'
+
+  build:
+    command: 'pnpm run build'
+
+  typecheck:
+    command: 'tsc --build --force'
+
+  format:
+    command: 'prettier --write src/'
+
+  lint:
+    command: 'eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore'

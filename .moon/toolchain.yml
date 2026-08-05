@@ -1,0 +1,4 @@
+node:
+  packageManager: 'pnpm'
+  pnpm:
+    version: '11.20.0'

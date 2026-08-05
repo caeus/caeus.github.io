@@ -2,6 +2,9 @@ export interface ArticleSample {
   readonly id: string
   readonly title: string
   readonly url: string
+  readonly readable_publish_date: string
+  readonly reading_time_minutes: number
+  readonly tag_list: readonly string[]
 }
 
 export interface DevtoClient {

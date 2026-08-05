@@ -1,0 +1,5 @@
+tasks:
+  push:
+    script: 'git add -A && git commit -m "build" && git push'
+    deps:
+      - 'ui:build'

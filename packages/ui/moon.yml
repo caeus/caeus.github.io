@@ -16,13 +16,6 @@ tasks:
   typecheck:
     command: 'pnpm exec tsc --build --force'
 
-  push:
-    script: 'git add -A && git commit -m "build" && git push'
-    deps:
-      - 'build'
-    options:
-      runFromWorkspaceRoot: true
-
   format:
     command: 'pnpm exec prettier --write src/'
 

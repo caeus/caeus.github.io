@@ -1,5 +1,6 @@
 projects:
-  - 'packages/*'
+  root: '.'
+  ui: 'packages/ui'
 
 vcs:
   defaultBranch: 'main'

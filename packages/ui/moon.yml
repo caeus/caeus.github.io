@@ -3,17 +3,28 @@ stack: 'frontend'
 
 tasks:
   dev:
-    command: 'vite'
+    command: 'pnpm run dev'
     type: 'run'
 
   build:
     command: 'pnpm run build'
+    deps:
+      - 'typecheck'
+      - 'lint'
+      - 'format'
 
   typecheck:
-    command: 'tsc --build --force'
+    command: 'pnpm exec tsc --build --force'
+
+  push:
+    script: 'git add -A && git commit -m "build" && git push'
+    deps:
+      - 'build'
+    options:
+      runFromWorkspaceRoot: true
 
   format:
-    command: 'prettier --write src/'
+    command: 'pnpm exec prettier --write src/'
 
   lint:
-    command: 'eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore'
+    command: 'pnpm exec eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix'

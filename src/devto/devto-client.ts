@@ -1,20 +1,30 @@
-export interface ArticleSample {
-  readonly id: string
-  readonly title: string
-  readonly url: string
-  readonly readable_publish_date: string
-  readonly reading_time_minutes: number
-  readonly tag_list: readonly string[]
-}
+import { z } from 'zod'
+
+export const ArticleSample = z
+  .object({
+    id: z.number().transform(String),
+    title: z.string(),
+    url: z.string(),
+    readable_publish_date: z.string(),
+    reading_time_minutes: z.number(),
+    tag_list: z.array(z.string()).readonly()
+  })
+  .readonly()
+
+export interface ArticleSample extends z.infer<typeof ArticleSample> {}
 
 export interface DevtoClient {
-  articles(username: string, per_page?: number, page?: number): Promise<ArticleSample[]>
+  articles(username: string, per_page?: number, page?: number): Promise<readonly ArticleSample[]>
 }
 
 export class DefaultDevtoClient implements DevtoClient {
   constructor(private readonly baseUrl: string) {}
 
-  articles(username: string, per_page?: number, page?: number): Promise<ArticleSample[]> {
+  async articles(
+    username: string,
+    per_page?: number,
+    page?: number
+  ): Promise<readonly ArticleSample[]> {
     const params = new URLSearchParams()
     if (per_page != undefined) params.append('per_page', String(per_page))
     if (page != undefined) params.append('page', String(page))
@@ -22,9 +32,12 @@ export class DefaultDevtoClient implements DevtoClient {
     params.append('username', (+new Date()).toString())
     params.append('username', username)
 
-    return fetch(`${this.baseUrl}/articles?${params}`).then((r) => {
-      if (r.ok) return r.json()
-      return r.json().then((body) => Promise.reject(body))
-    })
+    const r = await fetch(`${this.baseUrl}/articles?${params}`)
+    if (r.ok)
+      return z
+        .array(ArticleSample)
+        .readonly()
+        .parse(await r.json())
+    throw await r.json()
   }
 }

@@ -1,11 +1,7 @@
 language: 'typescript'
-
 tasks:
-  typecheck:
-    command: 'pnpm exec tsc --noEmit'
-    deps:
-      - 'common:typecheck'
-
-  dev:
-    command: 'pnpm exec wrangler dev'
-    type: 'run'
+    typecheck:
+          command: 'pnpm exec tsc --noEmit'
+    dev:
+          command: 'pnpm exec wrangler dev'
+          type: 'run'

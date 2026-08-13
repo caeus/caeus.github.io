@@ -1,18 +1,12 @@
 {
   "extends": "@tsconfig/strictest/tsconfig.json",
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "ES2022"
-    ],
+    "lib": ["ES2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": true,
-    "types": [
-      "@cloudflare/workers-types"
-    ]
+    "types": ["node"]
   }
 }

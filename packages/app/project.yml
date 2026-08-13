@@ -1,0 +1,10 @@
+stack: ts-executable
+dependencies:
+  - local: common
+  - remote: '@orpc/server'
+  - remote: wyr-ts
+devDependencies:
+  - remote: '@cloudflare/workers-types'
+  - remote: '@tsconfig/strictest'
+  - remote: typescript
+  - remote: wrangler

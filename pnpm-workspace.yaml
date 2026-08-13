@@ -1,7 +1,9 @@
 packages:
-  - 'packages/*'
+  - 'packages/app'
+  - 'packages/client'
+  - 'packages/common'
+  - 'packages/ui'
 allowBuilds:
   esbuild: true
+  sharp: true
   workerd: true
-minimumReleaseAgeExclude:
-  - wyr-ts@2.0.0 || 2.0.1 || 2.0.2-rc0 || 2.0.2-rc1

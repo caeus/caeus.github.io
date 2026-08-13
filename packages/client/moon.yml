@@ -1,7 +1,4 @@
 language: 'typescript'
-
 tasks:
-  typecheck:
-    command: 'pnpm exec tsc --noEmit'
-    deps:
-      - 'common:typecheck'
+    typecheck:
+          command: 'pnpm exec tsc --noEmit'

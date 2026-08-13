@@ -1,0 +1,27 @@
+stack: ts-ui
+dependencies:
+  - local: common
+  - remote: '@tailwindcss/vite'
+  - remote: '@vitejs/plugin-react'
+  - remote: class-variance-authority
+  - remote: clsx
+  - remote: react
+  - remote: react-dom
+  - remote: react-router-dom
+  - remote: tailwind-merge
+  - remote: tailwindcss
+  - remote: wyr-ts
+  - remote: zod
+devDependencies:
+  - remote: '@rushstack/eslint-patch'
+  - remote: '@tsconfig/strictest'
+  - remote: '@types/node'
+  - remote: '@types/react'
+  - remote: '@types/react-dom'
+  - remote: '@typescript-eslint/eslint-plugin'
+  - remote: '@typescript-eslint/parser'
+  - remote: eslint
+  - remote: npm-run-all2
+  - remote: prettier
+  - remote: typescript
+  - remote: vite

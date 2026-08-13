@@ -1,0 +1,8 @@
+stack: ts-lib
+dependencies:
+  - local: common
+  - remote: '@orpc/client'
+  - remote: '@orpc/contract'
+devDependencies:
+  - remote: '@tsconfig/strictest'
+  - remote: typescript

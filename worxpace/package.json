@@ -1,0 +1,22 @@
+{
+  "name": "@caeus/worxpace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node --import tsx/esm src/index.ts"
+  },
+  "devDependencies": {
+    "@tsconfig/strictest": "2.0.8",
+    "@types/node": "26.2.0",
+    "tsx": "4.23.7",
+    "typescript": "6.0.3"
+  },
+  "dependencies": {
+    "@optique/core": "1.2.0",
+    "@optique/run": "1.2.0",
+    "@optique/zod": "1.2.0",
+    "yaml": "2.9.0",
+    "zod": "4.4.3"
+  }
+}

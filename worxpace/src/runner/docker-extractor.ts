@@ -1,11 +1,11 @@
 import { spawn } from 'node:child_process'
 import { join } from 'node:path'
 
-export async function extractFromImage(imageId: string, outputGlobs: readonly string[], destDir: string): Promise<readonly string[]> {
+export async function extractFromImage(imageTag: string, outputGlobs: readonly string[], destDir: string): Promise<readonly string[]> {
   const written: string[] = []
   for (const glob of outputGlobs) {
     const dest = join(destDir, 'extracted')
-    await runCommand('docker', ['run', '--rm', '-v', `${destDir}:/out`, imageId, 'sh', '-c', `cp -r ${glob} /out/`])
+    await runCommand('docker', ['run', '--rm', '-v', `${destDir}:/out`, imageTag, 'sh', '-c', `cp -r ${glob} /out/`])
     written.push(dest)
   }
   return written

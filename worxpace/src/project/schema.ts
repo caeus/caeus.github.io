@@ -2,9 +2,15 @@ import { z } from 'zod'
 
 const Dep = z.string()
 
+const Copy = z.union([
+  z.object({ from: z.string(), src: z.string(), dest: z.string() }).readonly(),
+  z.object({ src: z.string(), dest: z.string() }).readonly(),
+])
+export type Copy = z.infer<typeof Copy>
+
 const Step = z.union([
   z.object({ RUN: z.string() }).readonly(),
-  z.object({ COPY: z.string() }).readonly(),
+  z.object({ COPY: Copy }).readonly(),
   z.object({ WORKDIR: z.string() }).readonly(),
   z.object({ ENV: z.record(z.string(), z.string()).readonly() }).readonly(),
   z.object({ ARG: z.string() }).readonly(),
@@ -13,17 +19,24 @@ const Step = z.union([
 ])
 export type Step = z.infer<typeof Step>
 
-export const Impl = z.object({
-  FROM: z.string(),
+const From = z.union([
+  z.object({ image: z.string() }).readonly(),
+  z.object({ target: z.string() }).readonly(),
+])
+export type From = z.infer<typeof From>
+
+export const Run = z.object({
+  FROM: From,
   steps: z.array(Step).readonly().default([]),
 }).readonly()
-export interface Impl extends z.infer<typeof Impl> {}
+export interface Run extends z.infer<typeof Run> {}
 
 const Target = z.object({
   deps: z.array(Dep).readonly().default([]),
-  impl: Impl,
+  run: Run,
   output: z.array(z.string()).readonly().optional(),
   materialize: z.literal(true).optional(),
+  exports: z.array(z.string()).readonly().optional(),
 }).readonly()
 export interface Target extends z.infer<typeof Target> {}
 

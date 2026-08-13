@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "node --import tsx/esm src/index.ts"
+    "generate": "node --import tsx/esm src/index.ts",
+    "test": "node --import tsx/esm --test --test-reporter=spec 'src/**/*.test.ts'"
   },
   "devDependencies": {
     "@tsconfig/strictest": "2.0.8",

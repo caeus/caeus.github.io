@@ -1,27 +1,37 @@
-stack: ts-ui
-dependencies:
-  - local: common
-  - remote: '@tailwindcss/vite'
-  - remote: '@vitejs/plugin-react'
-  - remote: class-variance-authority
-  - remote: clsx
-  - remote: react
-  - remote: react-dom
-  - remote: react-router-dom
-  - remote: tailwind-merge
-  - remote: tailwindcss
-  - remote: wyr-ts
-  - remote: zod
-devDependencies:
-  - remote: '@rushstack/eslint-patch'
-  - remote: '@tsconfig/strictest'
-  - remote: '@types/node'
-  - remote: '@types/react'
-  - remote: '@types/react-dom'
-  - remote: '@typescript-eslint/eslint-plugin'
-  - remote: '@typescript-eslint/parser'
-  - remote: eslint
-  - remote: npm-run-all2
-  - remote: prettier
-  - remote: typescript
-  - remote: vite
+ci:
+  install:
+    deps:
+      - packages/common#ci#pack
+      - packages/pnpmfile#ci#export
+    exports:
+      - /repo/node_modules
+    run:
+      FROM:
+        image: node:22-alpine
+      steps:
+        - RUN: corepack enable && corepack prepare pnpm@latest --activate
+        - COPY:
+            from: packages/common#ci#pack
+            src: /out/caeus-common-0.0.0.tgz
+            dest: /repo/common.tgz
+        - COPY:
+            from: packages/pnpmfile#ci#export
+            src: .pnpmfile.cjs
+            dest: /repo/.pnpmfile.cjs
+        - COPY:
+            src: package.json
+            dest: /repo/package.json
+        - WORKDIR: /repo
+        - RUN: 'printf "allowBuilds:\n  esbuild: true\n" > pnpm-workspace.yaml && pnpm install --prod=false'
+  typecheck:
+    deps:
+      - install
+    run:
+      FROM:
+        target: install
+      steps:
+        - COPY:
+            src: .
+            dest: /repo
+        - WORKDIR: /repo
+        - RUN: pnpm exec tsc --noEmit

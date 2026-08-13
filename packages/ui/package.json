@@ -16,6 +16,9 @@
     "wyr-ts": "2.0.2-rc1",
     "zod": "3.23.8"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
   "devDependencies": {
     "@rushstack/eslint-patch": "1.8.0",
     "@tsconfig/strictest": "2.0.8",

@@ -1,51 +1,45 @@
-import { object, or } from '@optique/core/constructs'
-import { argument, command, constant } from '@optique/core/primitives'
-import { string } from '@optique/core/valueparser'
-import { run } from '@optique/run'
 import { resolve } from 'node:path'
 import { AsyncDisposeStack, createKey, createModule, Module } from './di-container.js'
 import { findProjects, type ProjectFinder } from './project/finder.js'
-import type { Impl, ProjectFile } from './project/schema.js'
+import type { Run, ProjectFile } from './project/schema.js'
+import type { TaskResult } from './runner/index.js'
 import { buildRunner, type Runner } from './runner/index.js'
+import type { BuildResult } from './runner/docker-builder.js'
 import { renderDockerfile } from './runner/dockerfile-renderer.js'
 import { buildDockerImage } from './runner/docker-builder.js'
 import { extractFromImage } from './runner/docker-extractor.js'
+import { CompositeCommandRunner, ListCommandRunner, RunCommandRunner, parseCmd, type CommandRunner } from './commands/index.js'
 
 export interface DockerfileRenderer {
-  renderDockerfile(impl: Impl): string
+  renderDockerfile(run: Run, depResults: readonly TaskResult[]): string
 }
 
 export interface DockerImageBuilder {
-  buildDockerImage(content: string, tag: string, context: string): Promise<string>
+  buildDockerImage(content: string, tag: string, context: string): Promise<BuildResult>
 }
 
 export interface DockerImageExtractor {
-  extractFromImage(imageId: string, outputGlobs: readonly string[], destDir: string): Promise<readonly string[]>
+  extractFromImage(imageTag: string, outputGlobs: readonly string[], destDir: string): Promise<readonly string[]>
 }
 
 const rootKey = createKey<string>('root')
+const hostRootKey = createKey<string>('hostRoot')
 const projectFinderKey = createKey<ProjectFinder>('projectFinder')
 const projectsKey = createKey<Map<string, ProjectFile>>('projects')
 const dockerfileRendererKey = createKey<DockerfileRenderer>('dockerfileRenderer')
 const dockerImageBuilderKey = createKey<DockerImageBuilder>('dockerImageBuilder')
 const dockerImageExtractorKey = createKey<DockerImageExtractor>('dockerImageExtractor')
 const runnerKey = createKey<Runner>('runner')
-
-const parser = or(
-  command('run', object({
-    command: constant('run' as const),
-    fqt: argument(string()),
-  })),
-  command('list', object({
-    command: constant('list' as const),
-  })),
-)
+const listCommandRunnerKey = createKey<ListCommandRunner>('listCommandRunner')
+const runCommandRunnerKey = createKey<RunCommandRunner>('runCommandRunner')
+const commandRunnerKey = createKey<CommandRunner>('commandRunner')
 
 export type ModuleFactory = (stack: AsyncDisposeStack, env: NodeJS.ProcessEnv) => Module
 
 export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv): Module {
   return createModule()
     .bind(rootKey).toValue(env['REPO_ROOT'] ?? resolve(new URL('../../', import.meta.url).pathname))
+    .bind(hostRootKey).toFun([rootKey], root => env['HOST_REPO_ROOT'] ?? root)
     .bind(projectFinderKey).toValue({ findProjects } satisfies ProjectFinder)
     .bind(dockerfileRendererKey).toValue({ renderDockerfile } satisfies DockerfileRenderer)
     .bind(dockerImageBuilderKey).toValue({ buildDockerImage } satisfies DockerImageBuilder)
@@ -54,34 +48,24 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
     .bind(runnerKey).toFun(
       [rootKey, projectsKey, dockerfileRendererKey, dockerImageBuilderKey, dockerImageExtractorKey],
       (root, projects, renderer, builder, extractor) => buildRunner(root, projects, {
-        renderDockerfile: (impl) => renderer.renderDockerfile(impl),
+        renderDockerfile: (r, depResults) => renderer.renderDockerfile(r, depResults),
         buildDockerImage: (content, tag, context) => builder.buildDockerImage(content, tag, context),
-        extractFromImage: (imageId, globs, destDir) => extractor.extractFromImage(imageId, globs, destDir),
+        extractFromImage: (imageTag, globs, destDir) => extractor.extractFromImage(imageTag, globs, destDir),
       })
     )
+    .bind(listCommandRunnerKey).toClass([projectsKey], ListCommandRunner)
+    .bind(runCommandRunnerKey).toClass([projectsKey, runnerKey, dockerImageExtractorKey, hostRootKey], RunCommandRunner)
+    .bind(commandRunnerKey).toClass([runCommandRunnerKey, listCommandRunnerKey], CompositeCommandRunner)
 }
 
 export async function main(args: string[], env: NodeJS.ProcessEnv, moduleFactory: ModuleFactory = defaultModule): Promise<void> {
-  const cmd = run(parser, { args })
+  const cmd = parseCmd(args)
 
   const stack = new AsyncDisposeStack()
   try {
     const container = moduleFactory(stack, env).build()
-
-    if (cmd.command === 'list') {
-      const projects = await container.get(projectsKey)
-      for (const [moduleName, suites] of projects) {
-        for (const [suiteName, targets] of Object.entries(suites)) {
-          for (const targetName of Object.keys(targets)) {
-            console.log(`${moduleName}#${suiteName}#${targetName}`)
-          }
-        }
-      }
-    } else {
-      const runner = await container.get(runnerKey)
-      const result = await runner(cmd.fqt)
-      console.log(`Done: ${result.imageId}`)
-    }
+    const commandRunner = await container.get(commandRunnerKey)
+    await commandRunner.execute(cmd)
   } finally {
     await stack.dispose()
   }

@@ -1,12 +1,38 @@
 ci:
-  typecheck:
-    impl:
-      FROM: node:22-alpine
+  install:
+    exports:
+      - /repo/node_modules
+    run:
+      FROM:
+        image: node:22-alpine
       steps:
         - RUN: corepack enable && corepack prepare pnpm@latest --activate
-        - COPY: package.json /repo/package.json
+        - COPY:
+            src: package.json
+            dest: /repo/package.json
         - WORKDIR: /repo
         - RUN: pnpm install --ignore-workspace --prod=false
-        - COPY: . /repo
-        - RUN: pnpm install --ignore-workspace --prod=false
+  pack:
+    deps:
+      - install
+    run:
+      FROM:
+        target: install
+      steps:
+        - COPY:
+            src: .
+            dest: /repo
+        - WORKDIR: /repo
+        - RUN: pnpm pack --pack-destination /out
+  typecheck:
+    deps:
+      - install
+    run:
+      FROM:
+        target: install
+      steps:
+        - COPY:
+            src: .
+            dest: /repo
+        - WORKDIR: /repo
         - RUN: pnpm exec tsc --noEmit

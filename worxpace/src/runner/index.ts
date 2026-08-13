@@ -4,7 +4,8 @@ import { runTarget, type TargetRunnerDeps } from './target-runner.js'
 
 export interface TaskResult {
   readonly fqt: string
-  readonly imageId: string
+  readonly imageTag: string
+  readonly imageDigest: string
   readonly materializedPaths?: readonly string[]
 }
 

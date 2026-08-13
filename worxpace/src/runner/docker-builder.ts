@@ -1,26 +1,34 @@
-import { writeFile, unlink } from 'node:fs/promises'
+import { writeFile, readFile, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 
 const DEFAULT_DOCKERIGNORE = 'node_modules\n.git\n'
 
-export async function buildDockerImage(dockerfileContent: string, tag: string, contextPath: string): Promise<string> {
+export interface BuildResult {
+  readonly tag: string
+  readonly digest: string
+}
+
+export async function buildDockerImage(dockerfileContent: string, tag: string, contextPath: string): Promise<BuildResult> {
   const base = join(tmpdir(), `worxpace-${Date.now()}-${Math.random().toString(36).slice(2)}`)
   const dockerfilePath = `${base}.Dockerfile`
   const dockerignorePath = `${dockerfilePath}.dockerignore`
+  const iidfilePath = `${base}.iid`
 
   await Promise.all([
     writeFile(dockerfilePath, dockerfileContent, 'utf-8'),
     writeFile(dockerignorePath, DEFAULT_DOCKERIGNORE, 'utf-8'),
   ])
   try {
-    await runCommand('docker', ['buildx', 'build', '-t', tag, '-f', dockerfilePath, contextPath])
-    return tag
+    await runCommand('docker', ['buildx', 'build', '--load', '-t', tag, '--iidfile', iidfilePath, '-f', dockerfilePath, contextPath])
+    const digest = (await readFile(iidfilePath, 'utf-8')).trim()
+    return { tag, digest }
   } finally {
     await Promise.all([
       unlink(dockerfilePath).catch(() => undefined),
       unlink(dockerignorePath).catch(() => undefined),
+      unlink(iidfilePath).catch(() => undefined),
     ])
   }
 }

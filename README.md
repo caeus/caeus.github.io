@@ -1,45 +1,112 @@
-# ui
+# caeus.github.io
 
-This template should help get you started developing with Vue 3 in Vite.
+Personal site + monorepo. Deployed to GitHub Pages from `docs/`.
 
-## Recommended IDE Setup
+## Build system
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+This repo uses **worxpace** — a Docker-based task runner defined via `project.yml` files. Every package declares suites of targets; targets have dependencies, a Dockerfile-like `run` definition, and optional `exports` to materialize files back to the host.
 
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
-
-## Project Setup
+### Install `wx`
 
 ```sh
-npm install
+./worxpace/install.sh
 ```
 
-### Compile and Hot-Reload for Development
+This symlinks `wx` to `~/.local/bin/wx`. Make sure `~/.local/bin` is on your `PATH`.
+
+`wx` traverses parent directories looking for a `worxpace/` folder. When found, that directory is the monorepo root and `worxpace/cli.sh` is invoked from there.
+
+### Commands
 
 ```sh
-npm run dev
+wx list                        # list all available targets
+wx run <module>#<suite>#<target>   # run a specific target
 ```
 
-### Type-Check, Compile and Minify for Production
+Examples:
 
 ```sh
-npm run build
+wx run packages/ui#ci#scaffold     # generate config files from templates
+wx run packages/ui#ci#install      # install node_modules (exports to host)
+wx run packages/ui#ci#typecheck    # type-check
+wx run packages/ui#ci#build        # vite production build
+wx run .#ci#deploy                 # build ui and deploy to docs/
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+### `project.yml` format
 
-```sh
-npm run test:unit
+```yaml
+<suite>:
+  <target>:
+    deps:
+      - <target>                     # same suite
+      - <suite>#<target>             # same module, different suite
+      - <module>#<suite>#<target>    # cross-module
+    run:
+      FROM:
+        image: node:22-alpine        # base image
+        # or:
+        target: install              # use another target's image as base
+      steps:
+        - RUN: pnpm install
+        - COPY:
+            src: package.json
+            dest: /repo/package.json
+        - COPY:
+            from: other-target       # copy from another target's image
+            src: /out/file
+            dest: /repo/file
+        - WORKDIR: /repo
+        - ENV:
+            NODE_ENV: production
+    exports:
+      - /repo/node_modules           # copy directory to host as node_modules/
+      - /out/                        # copy contents of /out to host (trailing slash = flatten)
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+### Stacks & templates
 
-```sh
-npm run lint
+The `packages/forge` package contains a template engine ([Eta](https://eta.js.org/)) and stack templates. Each stack is a `FROM scratch` image of template files.
+
+| Stack | Target | Contents |
+|---|---|---|
+| `ts-ui` | `packages/forge#ci#ts-ui` | tsconfig, eslintrc, prettierrc, package.json, vite.config.ts, vitest.config.ts |
+| `ts-lib` | `packages/forge#ci#ts-lib` | tsconfig, prettierrc, package.json |
+| `ts-executable` | `packages/forge#ci#ts-executable` | tsconfig, prettierrc, package.json |
+
+Render a stack's templates in a consuming target:
+
+```yaml
+ci:
+  scaffold:
+    deps:
+      - packages/forge#ci#engine
+      - packages/forge#ci#ts-ui
+    run:
+      FROM:
+        image: node:22-alpine
+      steps:
+        - COPY:
+            from: packages/forge#ci#engine
+            src: /forge
+            dest: /forge
+        - COPY:
+            from: packages/forge#ci#ts-ui
+            src: /forge/templates/ts-ui
+            dest: /forge/templates/ts-ui
+        - RUN: 'node /forge/engine.js --template /forge/templates/ts-ui --data ''{"scope":"caeus","name":"mypackage","outDir":"../../docs"}'' --out /out'
+    exports:
+      - /out/
 ```
+
+Template variables use Eta syntax: `<%= it.scope %>`, `<%= it.name %>`, etc.
+
+## Packages
+
+| Package | Stack | Description |
+|---|---|---|
+| `packages/common` | ts-lib | Shared contracts and types |
+| `packages/client` | ts-lib | oRPC client |
+| `packages/app` | ts-executable | Cloudflare Worker |
+| `packages/ui` | ts-ui | React/Vite frontend (deployed to `docs/`) |
+| `packages/forge` | — | Template engine + stack templates |

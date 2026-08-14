@@ -1,0 +1,9 @@
+{
+  "name": "@caeus/forge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "eta": "4.6.0"
+  }
+}

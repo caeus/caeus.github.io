@@ -1,9 +1,0 @@
-ci:
-  export:
-    run:
-      FROM:
-        image: scratch
-      steps:
-        - COPY:
-            src: .pnpmfile.cjs
-            dest: .pnpmfile.cjs

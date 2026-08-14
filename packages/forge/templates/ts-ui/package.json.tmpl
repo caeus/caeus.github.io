@@ -1,11 +1,11 @@
 {
-  "name": "@caeus/ui",
+  "name": "@<%= it.scope %>/<%= it.name %>",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "pnpm": { "onlyBuiltDependencies": ["esbuild"] },
   "dependencies": {
-    "@caeus/common": "workspace:*",
+    "@<%= it.scope %>/common": "workspace:*",
     "@tailwindcss/vite": "4.3.3",
     "@vitejs/plugin-react": "4.7.0",
     "class-variance-authority": "0.7.1",

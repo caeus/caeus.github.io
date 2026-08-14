@@ -5,7 +5,8 @@ export async function extractFromImage(imageTag: string, outputGlobs: readonly s
   const written: string[] = []
   for (const glob of outputGlobs) {
     const dest = join(destDir, 'extracted')
-    await runCommand('docker', ['run', '--rm', '-v', `${destDir}:/out`, imageTag, 'sh', '-c', `cp -r ${glob} /out/`])
+    const src = glob.endsWith('/') ? `${glob}.` : glob
+    await runCommand('docker', ['run', '--rm', '-v', `${destDir}:/host-out`, imageTag, 'sh', '-c', `cp -r ${src} /host-out/`])
     written.push(dest)
   }
   return written

@@ -1,4 +1,0 @@
-language: 'typescript'
-tasks:
-    typecheck:
-          command: 'pnpm exec tsc --noEmit'

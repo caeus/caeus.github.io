@@ -4,7 +4,7 @@ function readPackage(pkg) {
     if (!deps) continue
     for (const [name, version] of Object.entries(deps)) {
       if (version.startsWith('workspace:')) {
-        const tarball = name.replace(/^@[^/]+\//, '').replace(/\//g, '-')
+        const tarball = name.replace(/^@<%= it.scope %>\//, '').replace(/\//g, '-')
         deps[name] = `file:./${tarball}.tgz`
       }
     }

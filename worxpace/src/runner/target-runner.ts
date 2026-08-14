@@ -12,7 +12,7 @@ export interface TargetRunnerDeps {
 export async function runTarget(fqt: string, target: Target, depResults: TaskResult[], root: string, deps: TargetRunnerDeps): Promise<TaskResult> {
   const moduleName = fqt.slice(0, fqt.indexOf('#'))
   const moduleDir = join(root, moduleName)
-  const tag = fqt.replace(/#/g, '-').replace(/\//g, '_')
+  const tag = fqt.replace(/#/g, '-').replace(/\//g, '_').replace(/^[^a-zA-Z0-9]+/, '')
   const dockerfileContent = deps.renderDockerfile(target.run, depResults)
   const { tag: imageTag, digest: imageDigest } = await deps.buildDockerImage(dockerfileContent, tag, moduleDir)
 

@@ -1,0 +1,9 @@
+ci:
+  deploy:
+    deps:
+      - packages/ui#ci#build
+    run:
+      FROM:
+        target: packages/ui#ci#build
+    exports:
+      - /docs

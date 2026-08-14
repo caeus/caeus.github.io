@@ -9,6 +9,12 @@ export interface ProjectFinder {
 
 export async function findProjects(root: string): Promise<Map<string, ProjectFile>> {
   const result = new Map<string, ProjectFile>()
+  const rootEntries = await readdir(root, { withFileTypes: true })
+  if (rootEntries.some(e => !e.isDirectory() && e.name === 'project.yml')) {
+    const raw = await readFile(resolve(root, 'project.yml'), 'utf-8')
+    const parsed = ProjectFile.safeParse(parse(raw))
+    if (parsed.success) result.set('.', parsed.data)
+  }
   const packagesRoot = resolve(root, 'packages')
   await walk(root, packagesRoot, result)
   return result

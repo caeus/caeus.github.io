@@ -5,7 +5,7 @@ import type { InferValue } from '@optique/core/parser'
 import { run } from '@optique/run'
 import { resolve } from 'node:path'
 import type { ProjectFile } from '../project/schema.js'
-import type { Runner } from '../runner/index.js'
+import { parseFqt, fqtToString, type Runner } from '../runner/index.js'
 import type { DockerImageExtractor } from '../wire.js'
 
 const parser = or(
@@ -32,12 +32,35 @@ export class ListCommandRunner implements CommandRunner {
   constructor(private readonly projects: Map<string, ProjectFile>) {}
 
   async execute(_cmd: Cmd): Promise<void> {
+    const graph = new Map<string, readonly string[]>()
+
     for (const [moduleName, suites] of this.projects) {
       for (const [suiteName, targets] of Object.entries(suites)) {
-        for (const targetName of Object.keys(targets)) {
-          console.log(`${moduleName}#${suiteName}#${targetName}`)
+        for (const [targetName, target] of Object.entries(targets)) {
+          const fqt = `${moduleName}#${suiteName}#${targetName}`
+          const deps = target.deps.map(d =>
+            fqtToString(parseFqt(d, { module: moduleName, suite: suiteName }))
+          )
+          graph.set(fqt, deps)
         }
       }
+    }
+
+    const sorted: string[] = []
+    const visited = new Set<string>()
+
+    const visit = (fqt: string): void => {
+      if (visited.has(fqt)) return
+      visited.add(fqt)
+      for (const dep of graph.get(fqt) ?? []) visit(dep)
+      sorted.push(fqt)
+    }
+
+    for (const fqt of graph.keys()) visit(fqt)
+
+    for (const fqt of sorted) {
+      const deps = graph.get(fqt) ?? []
+      console.log(`${fqt}[${deps.join(', ')}]`)
     }
   }
 }

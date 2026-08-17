@@ -51,7 +51,7 @@ async function loadProject(filePath: string, ctx: LoadContext): Promise<ModuleDe
 export async function loadModules(root: string): Promise<ReadonlyMap<string, ModuleDef>> {
   const ctx: LoadContext = {
     root,
-    context: vm.createContext(Object.create(null)),
+    context: vm.createContext(Object.assign(Object.create(null), { Buffer })),
     cache: new Map(),
   }
   const result = new Map<string, ModuleDef>()

@@ -1,0 +1,39 @@
+const forgeEngine = 'packages/forge#ci#engine'
+const forgePnpmfile = 'packages/forge#ci#pnpmfile'
+const commonPack = 'packages/common#ci#pack'
+
+export function ciSuite({ name, scope }) {
+  return {
+    pnpmfile: {
+      deps: [forgeEngine, forgePnpmfile],
+      run: (deps) => [
+        { FROM: 'node:22-alpine' },
+        { COPY: { from: deps[forgeEngine], src: '/forge', dest: '/forge' } },
+        { COPY: { from: deps[forgePnpmfile], src: '/forge/templates/pnpmfile', dest: '/forge/templates/pnpmfile' } },
+        { RUN: `node /forge/engine.js --template /forge/templates/pnpmfile --data '${JSON.stringify({ scope })}' --out /out` },
+      ]
+    },
+    install: {
+      deps: [commonPack, 'pnpmfile'],
+      exports: ['/repo/node_modules'],
+      run: (deps) => [
+        { FROM: 'node:22-alpine' },
+        { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },
+        { COPY: { from: deps[commonPack], src: `/out/${scope}-common-0.0.0.tgz`, dest: '/repo/common.tgz' } },
+        { COPY: { from: deps['pnpmfile'], src: '/out/.pnpmfile.cjs', dest: '/repo/.pnpmfile.cjs' } },
+        { COPY: { src: 'package.json', dest: '/repo/package.json' } },
+        { WORKDIR: '/repo' },
+        { RUN: 'pnpm install --ignore-workspace --prod=false' },
+      ]
+    },
+    typecheck: {
+      deps: ['install'],
+      run: (deps) => [
+        { FROM: deps['install'] },
+        { COPY: { src: '.', dest: '/repo' } },
+        { WORKDIR: '/repo' },
+        { RUN: 'pnpm exec tsc --noEmit' },
+      ]
+    }
+  }
+}

@@ -2,7 +2,6 @@ import { resolve } from 'node:path'
 import { AsyncDisposeStack, createKey, createModule, Module } from './di-container.js'
 import { findProjects, type ProjectFinder } from './project/finder.js'
 import type { Run, ProjectFile } from './project/schema.js'
-import type { TaskResult } from './runner/index.js'
 import { buildRunner, type Runner } from './runner/index.js'
 import type { BuildResult } from './runner/docker-builder.js'
 import { renderDockerfile } from './runner/dockerfile-renderer.js'
@@ -11,7 +10,7 @@ import { extractFromImage } from './runner/docker-extractor.js'
 import { CompositeCommandRunner, ListCommandRunner, RunCommandRunner, parseCmd, type CommandRunner } from './commands/index.js'
 
 export interface DockerfileRenderer {
-  renderDockerfile(run: Run, depResults: readonly TaskResult[]): string
+  renderDockerfile(run: Run): string
 }
 
 export interface DockerImageBuilder {
@@ -48,7 +47,7 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
     .bind(runnerKey).toFun(
       [rootKey, projectsKey, dockerfileRendererKey, dockerImageBuilderKey, dockerImageExtractorKey],
       (root, projects, renderer, builder, extractor) => buildRunner(root, projects, {
-        renderDockerfile: (r, depResults) => renderer.renderDockerfile(r, depResults),
+        renderDockerfile: (r) => renderer.renderDockerfile(r),
         buildDockerImage: (content, tag, context) => builder.buildDockerImage(content, tag, context),
         extractFromImage: (imageTag, globs, destDir) => extractor.extractFromImage(imageTag, globs, destDir),
       })

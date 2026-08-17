@@ -14,15 +14,6 @@ importers:
       '@optique/run':
         specifier: 1.2.0
         version: 1.2.0
-      '@optique/zod':
-        specifier: 1.2.0
-        version: 1.2.0(zod@4.4.3)
-      yaml:
-        specifier: 2.9.0
-        version: 2.9.0
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@tsconfig/strictest':
         specifier: 2.0.8
@@ -203,12 +194,6 @@ packages:
     resolution: {integrity: sha512-4H+sJbpKlB0DsFYyJmyTj2atDdF+9j14MbH99zPTK7YGQysWQ4Vo8UR1O91+ssIDUnKkMNoss7zMvaMf6A52Jw==}
     engines: {bun: '>=1.2.0', deno: '>=2.3.0', node: '>=20.0.0'}
 
-  '@optique/zod@1.2.0':
-    resolution: {integrity: sha512-IEgtnEP+Ua1IOwh4NhbPE01T9vNIwGTHXv3xwmkv/1QONMQggDp7Ss4077lrtsxZnwBrOdhAXZsQwhJObpJCHg==}
-    engines: {bun: '>=1.2.0', deno: '>=2.3.0', node: '>=20.0.0'}
-    peerDependencies:
-      zod: ^3.25.0 || ^4.0.0
-
   '@tsconfig/strictest@2.0.8':
     resolution: {integrity: sha512-XnQ7vNz5HRN0r88GYf1J9JJjqtZPiHt2woGJOo2dYqyHGGcd6OLGqSlBB6p1j9mpzja6Oe5BoPqWmeDx6X9rLw==}
 
@@ -237,14 +222,6 @@ packages:
 
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
-
-  yaml@2.9.0:
-    resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
-    engines: {node: '>= 14.6'}
-    hasBin: true
-
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
@@ -332,11 +309,6 @@ snapshots:
     dependencies:
       '@optique/core': 1.2.0
 
-  '@optique/zod@1.2.0(zod@4.4.3)':
-    dependencies:
-      '@optique/core': 1.2.0
-      zod: 4.4.3
-
   '@tsconfig/strictest@2.0.8': {}
 
   '@types/node@26.2.0':
@@ -384,7 +356,3 @@ snapshots:
   typescript@6.0.3: {}
 
   undici-types@8.3.0: {}
-
-  yaml@2.9.0: {}
-
-  zod@4.4.3: {}

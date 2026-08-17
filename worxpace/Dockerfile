@@ -8,8 +8,10 @@ COPY package.json pnpm-workspace.yaml ./
 RUN pnpm install
 
 COPY src/ ./src/
-COPY tsconfig.json versions.yml ./
+COPY tsconfig.json ./
+
+RUN pnpm exec tsc
 
 ENV REPO_ROOT=/repo
 
-ENTRYPOINT ["node", "--import", "tsx/esm", "src/index.ts"]
+ENTRYPOINT ["node", "--experimental-vm-modules", "dist/index.js"]

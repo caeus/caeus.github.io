@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "node --import tsx/esm src/index.ts",
+    "generate": "node --experimental-vm-modules --import tsx/esm src/index.ts",
     "test": "node --import tsx/esm --test --test-reporter=spec 'src/**/*.test.ts'"
   },
   "devDependencies": {
@@ -15,9 +15,6 @@
   },
   "dependencies": {
     "@optique/core": "1.2.0",
-    "@optique/run": "1.2.0",
-    "@optique/zod": "1.2.0",
-    "yaml": "2.9.0",
-    "zod": "4.4.3"
+    "@optique/run": "1.2.0"
   }
 }

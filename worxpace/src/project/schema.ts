@@ -1,47 +1,32 @@
-import { z } from 'zod'
+export interface Copy {
+  readonly from?: string
+  readonly src: string
+  readonly dest: string
+}
 
-const Dep = z.string()
+export type Step =
+  | { readonly RUN: string }
+  | { readonly COPY: Copy }
+  | { readonly WORKDIR: string }
+  | { readonly ENV: Readonly<Record<string, string>> }
+  | { readonly ARG: string }
+  | { readonly ENTRYPOINT: readonly string[] }
+  | { readonly CMD: readonly string[] }
 
-const Copy = z.union([
-  z.object({ from: z.string(), src: z.string(), dest: z.string() }).readonly(),
-  z.object({ src: z.string(), dest: z.string() }).readonly(),
-])
-export type Copy = z.infer<typeof Copy>
+export interface Run {
+  readonly FROM: string
+  readonly steps: readonly Step[]
+}
 
-const Step = z.union([
-  z.object({ RUN: z.string() }).readonly(),
-  z.object({ COPY: Copy }).readonly(),
-  z.object({ WORKDIR: z.string() }).readonly(),
-  z.object({ ENV: z.record(z.string(), z.string()).readonly() }).readonly(),
-  z.object({ ARG: z.string() }).readonly(),
-  z.object({ ENTRYPOINT: z.array(z.string()).readonly() }).readonly(),
-  z.object({ CMD: z.array(z.string()).readonly() }).readonly(),
-])
-export type Step = z.infer<typeof Step>
+export type RunFn = (deps: Readonly<Record<string, string>>) => Run
 
-const From = z.union([
-  z.object({ image: z.string() }).readonly(),
-  z.object({ target: z.string() }).readonly(),
-])
-export type From = z.infer<typeof From>
+export interface Target {
+  readonly deps: readonly string[]
+  readonly run: RunFn
+  readonly exports?: readonly string[]
+  readonly materialize?: true
+  readonly output?: readonly string[]
+}
 
-export const Run = z.object({
-  FROM: From,
-  steps: z.array(Step).readonly().default([]),
-}).readonly()
-export interface Run extends z.infer<typeof Run> {}
-
-const Target = z.object({
-  deps: z.array(Dep).readonly().default([]),
-  run: Run,
-  output: z.array(z.string()).readonly().optional(),
-  materialize: z.literal(true).optional(),
-  exports: z.array(z.string()).readonly().optional(),
-}).readonly()
-export interface Target extends z.infer<typeof Target> {}
-
-const Suite = z.record(z.string(), Target).readonly()
-export interface Suite extends z.infer<typeof Suite> {}
-
-export const ProjectFile = z.record(z.string(), Suite).readonly()
-export interface ProjectFile extends z.infer<typeof ProjectFile> {}
+export type Suite = Readonly<Record<string, Target>>
+export type ProjectFile = Readonly<Record<string, Suite>>

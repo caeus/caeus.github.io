@@ -6,7 +6,7 @@
     "lib": ["ES2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "noEmit": true,
+    "outDir": "dist",
     "types": ["node"]
   }
 }

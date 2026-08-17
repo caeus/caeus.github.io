@@ -37,14 +37,12 @@ describe('buildRunner', () => {
     extractFromImage: async () => [],
   }
 
-  const makeProject = (overrides: Partial<ProjectFile> = {}): Map<string, ProjectFile> =>
+  const makeProject = (): Map<string, ProjectFile> =>
     new Map([['pkg', {
       ci: {
-        a: { deps: [], run: { FROM: { image: 'alpine' }, steps: [] } },
-        b: { deps: ['a'], run: { FROM: { target: 'a' }, steps: [] } },
-        ...overrides['ci'],
-      },
-      ...overrides,
+        a: { deps: [], run: (_deps) => ({ FROM: 'alpine', steps: [] }) },
+        b: { deps: ['a'], run: (deps) => ({ FROM: deps['a']!, steps: [] }) },
+      }
     }]])
 
   it('runs a target with no deps', async () => {
@@ -78,6 +76,20 @@ describe('buildRunner', () => {
     assert.equal(order[1], 'pkg-ci-b')
   })
 
+  it('passes dep image tags to run function', async () => {
+    let receivedDeps: Record<string, string> = {}
+    const project = new Map<string, ProjectFile>([['pkg', {
+      ci: {
+        a: { deps: [], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
+        b: { deps: ['a'], run: (d) => { receivedDeps = {...d}; return { FROM: d['a']!, steps: [] } } },
+      }
+    }]])
+    const runner = buildRunner('/', project, stubDeps)
+    await runner('pkg#ci#b')
+    assert.ok('a' in receivedDeps)
+    assert.ok(receivedDeps['a']!.startsWith('pkg-ci-a'))
+  })
+
   it('throws on unknown target', async () => {
     const runner = buildRunner('/', makeProject(), stubDeps)
     await assert.rejects(() => Promise.resolve().then(() => runner('pkg#ci#missing')), /Unknown target/)
@@ -86,9 +98,9 @@ describe('buildRunner', () => {
   it('detects circular dependencies', async () => {
     const circular = new Map<string, ProjectFile>([['pkg', {
       ci: {
-        a: { deps: ['b'], run: { FROM: { image: 'alpine' }, steps: [] } },
-        b: { deps: ['a'], run: { FROM: { image: 'alpine' }, steps: [] } },
-      },
+        a: { deps: ['b'], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
+        b: { deps: ['a'], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
+      }
     }]])
     const runner = buildRunner('/', circular, stubDeps)
     await assert.rejects(() => Promise.resolve().then(() => runner('pkg#ci#a')), /Circular dependency/)

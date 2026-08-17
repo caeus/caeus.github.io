@@ -1,23 +1,13 @@
 import type { Run } from '../project/schema.js'
-import type { TaskResult } from './index.js'
 
-export function renderDockerfile(run: Run, depResults: readonly TaskResult[]): string {
-  const from = 'image' in run.FROM
-    ? run.FROM.image
-    : resolveDepImage(run.FROM.target, depResults)
-
-  const lines: string[] = [`FROM ${from}`]
+export function renderDockerfile(run: Run): string {
+  const lines: string[] = [`FROM ${run.FROM}`]
 
   for (const step of run.steps) {
     if ('RUN' in step) lines.push(`RUN ${step.RUN}`)
     else if ('COPY' in step) {
-      const copy = step.COPY
-      if ('from' in copy) {
-        const fromImage = resolveDepImage(copy.from, depResults)
-        lines.push(`COPY --from=${fromImage} ${copy.src} ${copy.dest}`)
-      } else {
-        lines.push(`COPY ${copy.src} ${copy.dest}`)
-      }
+      const { from, src, dest } = step.COPY
+      lines.push(from ? `COPY --from=${from} ${src} ${dest}` : `COPY ${src} ${dest}`)
     }
     else if ('WORKDIR' in step) lines.push(`WORKDIR ${step.WORKDIR}`)
     else if ('ARG' in step) lines.push(`ARG ${step.ARG}`)
@@ -29,12 +19,4 @@ export function renderDockerfile(run: Run, depResults: readonly TaskResult[]): s
   }
 
   return lines.join('\n') + '\n'
-}
-
-function resolveDepImage(targetName: string, depResults: readonly TaskResult[]): string {
-  const dep = targetName.includes('#')
-    ? depResults.find(d => d.fqt === targetName)
-    : depResults.find(d => d.fqt.slice(d.fqt.lastIndexOf('#') + 1) === targetName)
-  if (!dep) throw new Error(`No dep result found for target: ${targetName}`)
-  return dep.imageTag
 }

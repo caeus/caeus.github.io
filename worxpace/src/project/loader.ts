@@ -1,9 +1,10 @@
 import vm from 'node:vm'
 import { readdir, readFile } from 'node:fs/promises'
-import { resolve, relative } from 'node:path'
+import { resolve, relative, extname } from 'node:path'
 import { ProjectFile } from './schema.js'
 
 const WX_PREFIX = 'wx:/'
+const BUILD_FILE = 'build.wx'
 
 export interface ProjectLoader {
   loadProjects(root: string): Promise<Map<string, ProjectFile>>
@@ -17,8 +18,10 @@ interface LoadContext {
 
 async function link(specifier: string, ctx: LoadContext): Promise<vm.SourceTextModule> {
   if (!specifier.startsWith(WX_PREFIX))
-    throw new Error(`Only wx:/ imports are allowed in project.js, got: ${specifier}`)
-  const path = resolve(ctx.root, specifier.slice(WX_PREFIX.length))
+    throw new Error(`Only wx:/ imports are allowed in build.wx, got: ${specifier}`)
+  const rel = specifier.slice(WX_PREFIX.length)
+  const base = resolve(ctx.root, rel)
+  const path = extname(base) ? base : `${base}.wx`
   const cached = ctx.cache.get(path)
   if (cached) return cached
   const code = await readFile(path, 'utf-8')
@@ -46,19 +49,18 @@ export async function loadProjects(root: string): Promise<Map<string, ProjectFil
   }
   const result = new Map<string, ProjectFile>()
   const rootEntries = await readdir(root, { withFileTypes: true })
-  if (rootEntries.some(e => !e.isDirectory() && e.name === 'project.js')) {
-    const project = await loadProject(resolve(root, 'project.js'), ctx)
+  if (rootEntries.some(e => !e.isDirectory() && e.name === BUILD_FILE)) {
+    const project = await loadProject(resolve(root, BUILD_FILE), ctx)
     if (project) result.set('.', project)
   }
-  const packagesRoot = resolve(root, 'packages')
-  await walk(packagesRoot, ctx, result)
+  await walk(resolve(root, 'packages'), ctx, result)
   return result
 }
 
 async function walk(dir: string, ctx: LoadContext, acc: Map<string, ProjectFile>): Promise<void> {
   const entries = await readdir(dir, { withFileTypes: true })
-  if (entries.some(e => !e.isDirectory() && e.name === 'project.js')) {
-    const project = await loadProject(resolve(dir, 'project.js'), ctx)
+  if (entries.some(e => !e.isDirectory() && e.name === BUILD_FILE)) {
+    const project = await loadProject(resolve(dir, BUILD_FILE), ctx)
     if (project) acc.set(relative(ctx.root, dir), project)
     return
   }

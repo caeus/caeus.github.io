@@ -44,7 +44,8 @@ export function ciSuite({ name, scope, deps = [] }) {
       deps: ['install'],
       run: (deps) => [
         { FROM: deps['install'] },
-        { COPY: { src: '.', dest: '/repo' } },
+        { COPY: { src: 'src', dest: '/repo/src' } },
+        { COPY: { src: 'tsconfig.json', dest: '/repo/tsconfig.json' } },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm exec tsc --outDir dist --declaration --noEmit false' },
       ]
@@ -61,7 +62,8 @@ export function ciSuite({ name, scope, deps = [] }) {
       deps: ['install'],
       run: (deps) => [
         { FROM: deps['install'] },
-        { COPY: { src: '.', dest: '/repo' } },
+        { COPY: { src: 'src', dest: '/repo/src' } },
+        { COPY: { src: 'tsconfig.json', dest: '/repo/tsconfig.json' } },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm exec tsc --noEmit' },
       ]

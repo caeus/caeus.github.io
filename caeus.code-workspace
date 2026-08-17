@@ -1,7 +1,8 @@
 {
   "folders": [
     { "name": "monorepo", "path": "." },
-    { "name": "worxpace", "path": "worxpace" }
+    { "name": "worxpace", "path": "worxpace" },
+    { "name": "app", "path": "packages/app" }
   ],
   "settings": {
     "files.associations": {

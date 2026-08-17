@@ -4,7 +4,7 @@ import { string } from '@optique/core/valueparser'
 import type { InferValue } from '@optique/core/parser'
 import { run } from '@optique/run'
 import { resolve } from 'node:path'
-import type { ProjectFile } from '../project/schema.js'
+import type { ModuleDef } from '../project/schema.js'
 import { parseFqt, fqtToString, type Runner } from '../runner/index.js'
 import type { DockerImageExtractor } from '../wire.js'
 
@@ -29,7 +29,7 @@ export interface CommandRunner {
 }
 
 export class ListCommandRunner implements CommandRunner {
-  constructor(private readonly projects: ReadonlyMap<string, ProjectFile>) {}
+  constructor(private readonly projects: ReadonlyMap<string, ModuleDef>) {}
 
   async execute(_cmd: Cmd): Promise<void> {
     const graph = new Map<string, readonly string[]>()
@@ -67,7 +67,7 @@ export class ListCommandRunner implements CommandRunner {
 
 export class RunCommandRunner implements CommandRunner {
   constructor(
-    private readonly projects: ReadonlyMap<string, ProjectFile>,
+    private readonly projects: ReadonlyMap<string, ModuleDef>,
     private readonly runner: Runner,
     private readonly extractor: DockerImageExtractor,
     private readonly root: string,

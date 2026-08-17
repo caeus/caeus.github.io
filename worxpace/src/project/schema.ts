@@ -36,5 +36,5 @@ export interface Target extends z.infer<typeof Target> {}
 export const Suite = z.record(z.string(), Target).readonly();
 export interface Suite extends z.infer<typeof Suite> {}
 
-export const ProjectFile = z.record(z.string(), Suite).readonly();
-export interface ProjectFile extends z.infer<typeof ProjectFile> {}
+export const ModuleDef = z.record(z.string(), Suite).readonly();
+export interface ModuleDef extends z.infer<typeof ModuleDef> {}

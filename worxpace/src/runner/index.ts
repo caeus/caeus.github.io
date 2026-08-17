@@ -1,4 +1,4 @@
-import type { ProjectFile } from '../project/schema.js'
+import type { ModuleDef } from '../project/schema.js'
 import { runTarget, type TargetRunnerDeps } from './target-runner.js'
 
 
@@ -30,7 +30,7 @@ export type Runner = (fqt: string) => Promise<TaskResult>
 
 export { type TargetRunnerDeps }
 
-export function buildRunner(root: string, projects: ReadonlyMap<string, ProjectFile>, deps: TargetRunnerDeps): Runner {
+export function buildRunner(root: string, projects: ReadonlyMap<string, ModuleDef>, deps: TargetRunnerDeps): Runner {
   const memo = new Map<string, Promise<TaskResult>>()
 
   const run = (fqt: string, trace: readonly string[] = []): Promise<TaskResult> => {

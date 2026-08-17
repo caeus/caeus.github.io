@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { parseFqt, fqtToString, buildRunner } from './index.js'
 import type { TargetRunnerDeps } from './index.js'
 import type { BuildResult } from './docker-builder.js'
-import type { ProjectFile } from '../project/schema.js'
+import type { ModuleDef } from '../project/schema.js'
 
 describe('parseFqt', () => {
   const ctx = { module: 'mod', suite: 'ci' }
@@ -37,7 +37,7 @@ describe('buildRunner', () => {
     extractFromImage: async () => [],
   }
 
-  const makeProject = (): Map<string, ProjectFile> =>
+  const makeProject = (): Map<string, ModuleDef> =>
     new Map([['pkg', {
       ci: {
         a: { deps: [], run: (_d) => [{ FROM: 'alpine' }] },
@@ -78,7 +78,7 @@ describe('buildRunner', () => {
 
   it('passes dep image tags to run function', async () => {
     let receivedDeps: Record<string, string> = {}
-    const project = new Map<string, ProjectFile>([['pkg', {
+    const project = new Map<string, ModuleDef>([['pkg', {
       ci: {
         a: { deps: [], run: (_d) => [{ FROM: 'alpine' }] },
         b: { deps: ['a'], run: (d) => { receivedDeps = {...d}; return [{ FROM: d['a']! }] } },
@@ -96,7 +96,7 @@ describe('buildRunner', () => {
   })
 
   it('detects circular dependencies', async () => {
-    const circular = new Map<string, ProjectFile>([['pkg', {
+    const circular = new Map<string, ModuleDef>([['pkg', {
       ci: {
         a: { deps: ['b'], run: (_d) => [{ FROM: 'alpine' }] },
         b: { deps: ['a'], run: (_d) => [{ FROM: 'alpine' }] },

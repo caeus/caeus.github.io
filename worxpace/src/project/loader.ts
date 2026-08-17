@@ -1,13 +1,13 @@
 import vm from 'node:vm'
 import { readdir, readFile } from 'node:fs/promises'
 import { resolve, relative, extname } from 'node:path'
-import { ProjectFile } from './schema.js'
+import { ModuleDef } from './schema.js'
 
 const WX_PREFIX = 'wx:/'
 const BUILD_FILE = 'build.wx'
 
-export interface ProjectLoader {
-  loadProjects(root: string): Promise<ReadonlyMap<string, ProjectFile>>
+export interface ModuleLoader {
+  loadModules(root: string): Promise<ReadonlyMap<string, ModuleDef>>
 }
 
 interface LoadContext {
@@ -38,23 +38,23 @@ async function link(specifier: string, ctx: LoadContext): Promise<vm.SourceTextM
   return mod
 }
 
-async function loadProject(filePath: string, ctx: LoadContext): Promise<ProjectFile | null> {
+async function loadProject(filePath: string, ctx: LoadContext): Promise<ModuleDef | null> {
   const code = await readFile(filePath, 'utf-8')
   const mod = new vm.SourceTextModule(code, { context: ctx.context, identifier: filePath })
   await mod.link((s) => link(s, ctx))
   await mod.evaluate()
   const defaultExport = (mod.namespace as Record<string, unknown>)['default']
-  const result = ProjectFile.safeParse(defaultExport)
+  const result = ModuleDef.safeParse(defaultExport)
   return result.success ? deepFreeze(result.data) : null
 }
 
-export async function loadProjects(root: string): Promise<ReadonlyMap<string, ProjectFile>> {
+export async function loadModules(root: string): Promise<ReadonlyMap<string, ModuleDef>> {
   const ctx: LoadContext = {
     root,
     context: vm.createContext(Object.create(null)),
     cache: new Map(),
   }
-  const result = new Map<string, ProjectFile>()
+  const result = new Map<string, ModuleDef>()
   const rootEntries = await readdir(root, { withFileTypes: true })
   if (rootEntries.some(e => !e.isDirectory() && e.name === BUILD_FILE)) {
     const project = await loadProject(resolve(root, BUILD_FILE), ctx)
@@ -64,7 +64,7 @@ export async function loadProjects(root: string): Promise<ReadonlyMap<string, Pr
   return Object.freeze(result)
 }
 
-async function walk(dir: string, ctx: LoadContext, acc: Map<string, ProjectFile>): Promise<void> {
+async function walk(dir: string, ctx: LoadContext, acc: Map<string, ModuleDef>): Promise<void> {
   const entries = await readdir(dir, { withFileTypes: true })
   if (entries.some(e => !e.isDirectory() && e.name === BUILD_FILE)) {
     const project = await loadProject(resolve(dir, BUILD_FILE), ctx)

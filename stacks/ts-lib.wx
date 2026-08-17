@@ -1,10 +1,30 @@
 import versions from 'wx:/versions'
 import { buildPackageJson } from 'wx:/stacks/utils'
-
-const forgeEngine = 'packages/forge#ci#engine'
-const forgeTsLib = 'packages/forge#ci#ts-lib'
+import { writeJson } from 'wx:/generate_file'
 
 const CORE_DEV_DEPS = ['@tsconfig/strictest', 'typescript']
+
+const TSCONFIG = {
+  extends: '@tsconfig/strictest/tsconfig.json',
+  include: ['src/**/*'],
+  compilerOptions: {
+    rootDir: 'src',
+    target: 'ES2022',
+    lib: ['ES2022'],
+    module: 'ESNext',
+    moduleResolution: 'Bundler',
+    noEmit: true,
+  }
+}
+
+const PRETTIERRC = {
+  $schema: 'https://json.schemastore.org/prettierrc',
+  semi: false,
+  tabWidth: 2,
+  singleQuote: true,
+  printWidth: 100,
+  trailingComma: 'none',
+}
 
 export function ciSuite({ name, scope, deps = [] }) {
   const packageJson = buildPackageJson({
@@ -16,26 +36,17 @@ export function ciSuite({ name, scope, deps = [] }) {
       files: ['dist'],
     }
   })
-  const scaffoldData = JSON.stringify({ scope, name, packageJson })
 
   return {
-    scaffold: {
-      deps: [forgeEngine, forgeTsLib],
-      exports: ['/out/'],
-      run: (deps) => [
-        { FROM: 'node:22-alpine' },
-        { COPY: { from: deps[forgeEngine], src: '/forge', dest: '/forge' } },
-        { COPY: { from: deps[forgeTsLib], src: '/forge/templates/ts-lib', dest: '/forge/templates/ts-lib' } },
-        { RUN: `node /forge/engine.js --template /forge/templates/ts-lib --data '${scaffoldData}' --out /out` },
-      ]
-    },
     install: {
-      deps: ['scaffold'],
+      deps: [],
       exports: ['/repo/node_modules'],
-      run: (deps) => [
+      run: (_deps) => [
         { FROM: 'node:22-alpine' },
         { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },
-        { COPY: { from: deps['scaffold'], src: '/out/package.json', dest: '/repo/package.json' } },
+        writeJson('/repo/package.json', packageJson),
+        writeJson('/repo/tsconfig.json', TSCONFIG),
+        writeJson('/repo/.prettierrc.json', PRETTIERRC),
         { WORKDIR: '/repo' },
         { RUN: 'pnpm install --ignore-workspace --prod=false' },
       ]
@@ -45,7 +56,6 @@ export function ciSuite({ name, scope, deps = [] }) {
       run: (deps) => [
         { FROM: deps['install'] },
         { COPY: { src: 'src', dest: '/repo/src' } },
-        { COPY: { src: 'tsconfig.json', dest: '/repo/tsconfig.json' } },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm exec tsc --outDir dist --declaration --noEmit false' },
       ]
@@ -63,7 +73,6 @@ export function ciSuite({ name, scope, deps = [] }) {
       run: (deps) => [
         { FROM: deps['install'] },
         { COPY: { src: 'src', dest: '/repo/src' } },
-        { COPY: { src: 'tsconfig.json', dest: '/repo/tsconfig.json' } },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm exec tsc --noEmit' },
       ]

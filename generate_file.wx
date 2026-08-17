@@ -1,0 +1,28 @@
+function shellEscape(content) {
+  return content.replace(/'/g, "'\\''")
+}
+
+export function writeText(path, content) {
+  return { RUN: `printf '%s' '${shellEscape(content)}' > ${path}` }
+}
+
+export function writeJson(path, value) {
+  return writeText(path, JSON.stringify(value, null, 2))
+}
+
+export function writeYaml(path, value) {
+  return writeText(path, toYaml(value, 0))
+}
+
+function toYaml(value, depth) {
+  const pad = '  '.repeat(depth)
+  if (value === null || value === undefined) return 'null'
+  if (typeof value === 'boolean' || typeof value === 'number') return String(value)
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.map(v => `${pad}- ${toYaml(v, depth + 1)}`).join('\n')
+  return Object.entries(value).map(([k, v]) =>
+    typeof v === 'object' && v !== null
+      ? `${pad}${k}:\n${toYaml(v, depth + 1)}`
+      : `${pad}${k}: ${toYaml(v, depth + 1)}`
+  ).join('\n')
+}

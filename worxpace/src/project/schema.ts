@@ -2,23 +2,23 @@ import { z } from "zod";
 
 export const Copy = z
   .object({ from: z.string().optional(), src: z.string(), dest: z.string() })
+  .strict()
   .readonly();
-
-export type Copy = z.infer<typeof Copy>;
+export interface Copy extends z.infer<typeof Copy> {}
 
 export const Step = z.union([
-  z.object({ RUN: z.string() }).readonly(),
-  z.object({ COPY: Copy }).readonly(),
-  z.object({ WORKDIR: z.string() }).readonly(),
-  z.object({ ENV: z.record(z.string(), z.string()).readonly() }).readonly(),
-  z.object({ ARG: z.string() }).readonly(),
-  z.object({ ENTRYPOINT: z.array(z.string()).readonly() }).readonly(),
-  z.object({ CMD: z.array(z.string()).readonly() }).readonly(),
+  z.object({ RUN: z.string() }).strict().readonly(),
+  z.object({ COPY: Copy }).strict().readonly(),
+  z.object({ WORKDIR: z.string() }).strict().readonly(),
+  z.object({ ENV: z.record(z.string(), z.string()).readonly() }).strict().readonly(),
+  z.object({ ARG: z.string() }).strict().readonly(),
+  z.object({ ENTRYPOINT: z.array(z.string()).readonly() }).strict().readonly(),
+  z.object({ CMD: z.array(z.string()).readonly() }).strict().readonly(),
 ]);
 export type Step = z.infer<typeof Step>;
 
 export const Run = z
-  .tuple([z.object({ FROM: z.string() }).readonly()])
+  .tuple([z.object({ FROM: z.string() }).strict().readonly()])
   .rest(Step);
 export type Run = z.infer<typeof Run>;
 

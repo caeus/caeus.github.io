@@ -96,7 +96,6 @@ export function ciSuite({ name, scope, outDir, deps = [] }) {
     coreDevDeps: CORE_DEV_DEPS,
     extra: {
       imports: { '#*': './src/*' },
-      pnpm: { onlyBuiltDependencies: ['esbuild'] },
     },
     versions,
   })
@@ -104,7 +103,7 @@ export function ciSuite({ name, scope, outDir, deps = [] }) {
   return {
     install: {
       deps: packTargets,
-      exports: ['/repo/node_modules'],
+      exports: [{ from: '/repo/node_modules', to: 'node_modules' }],
       run: (deps) => [
         { FROM: 'node:22-alpine' },
         { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },

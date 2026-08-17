@@ -1,7 +1,7 @@
 import { resolve, relative } from 'node:path'
 import { AsyncDisposeStack, createKey, createModule, Module } from './di-container.js'
 import { loadModules, type ModuleLoader } from './project/loader.js'
-import type { Run, ModuleDef } from './project/schema.js'
+import type { Run, ModuleDef, ExportEntry } from './project/schema.js'
 import { buildRunner, type Runner } from './runner/index.js'
 import type { BuildResult } from './runner/docker-builder.js'
 import { renderDockerfile } from './runner/dockerfile-renderer.js'
@@ -18,7 +18,7 @@ export interface DockerImageBuilder {
 }
 
 export interface DockerImageExtractor {
-  extractFromImage(imageTag: string, outputGlobs: readonly string[], destDir: string): Promise<readonly string[]>
+  extractFromImage(imageTag: string, exports: readonly ExportEntry[], destDir: string): Promise<void>
 }
 
 const rootKey = createKey<string>('root')
@@ -51,7 +51,7 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
       (root, projects, renderer, builder, extractor) => buildRunner(root, projects, {
         renderDockerfile: (r) => renderer.renderDockerfile(r),
         buildDockerImage: (content, tag, context) => builder.buildDockerImage(content, tag, context),
-        extractFromImage: (imageTag, globs, destDir) => extractor.extractFromImage(imageTag, globs, destDir),
+        extractFromImage: (imageTag, exports, destDir) => extractor.extractFromImage(imageTag, exports, destDir),
       })
     )
     .bind(listCommandRunnerKey).toClass([modulesKey], ListCommandRunner)

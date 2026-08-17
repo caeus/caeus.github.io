@@ -30,14 +30,12 @@ const PRETTIERRC = {
 export function ciSuite({ name, scope, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
-  const packageJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions,
-    extra: { pnpm: { onlyBuiltDependencies: ['esbuild', 'sharp', 'workerd'] } }
-  })
+  const packageJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
 
   return {
     install: {
       deps: packTargets,
-      exports: ['/repo/node_modules'],
+      exports: [{ from: '/repo/node_modules', to: 'node_modules' }],
       run: (deps) => [
         { FROM: 'node:22-alpine' },
         { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },

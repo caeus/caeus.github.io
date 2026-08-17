@@ -1,15 +1,14 @@
 import { spawn } from 'node:child_process'
-import { join } from 'node:path'
+import type { ExportEntry } from '../project/schema.js'
 
-export async function extractFromImage(imageTag: string, outputGlobs: readonly string[], destDir: string): Promise<readonly string[]> {
-  const written: string[] = []
-  for (const glob of outputGlobs) {
-    const dest = join(destDir, 'extracted')
-    const src = glob.endsWith('/') ? `${glob}.` : glob
-    await runCommand('docker', ['run', '--rm', '-v', `${destDir}:/host-out`, imageTag, 'sh', '-c', `cp -r ${src} /host-out/`])
-    written.push(dest)
+export async function extractFromImage(imageTag: string, exports: readonly ExportEntry[], destDir: string): Promise<void> {
+  for (const { from, to } of exports) {
+    const hostDest = to === '.' ? '/host-out' : `/host-out/${to}`
+    await runCommand('docker', [
+      'run', '--rm', '-v', `${destDir}:/host-out`, imageTag,
+      'sh', '-c', `mkdir -p ${hostDest} && cp -r ${from}/. ${hostDest}/`
+    ])
   }
-  return written
 }
 
 function runCommand(cmd: string, args: string[]): Promise<void> {

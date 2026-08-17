@@ -24,11 +24,17 @@ export type Run = z.infer<typeof Run>;
 
 export type RunFn = (deps: Readonly<Record<string, string>>) => Run;
 
+export const ExportEntry = z
+  .object({ from: z.string(), to: z.string() })
+  .strict()
+  .readonly()
+export type ExportEntry = z.infer<typeof ExportEntry>
+
 export const Target = z
   .object({
     deps: z.array(z.string()).readonly().default([]),
     run: z.custom<RunFn>((v) => typeof v === "function"),
-    exports: z.array(z.string()).readonly().optional(),
+    exports: z.array(ExportEntry).readonly().optional(),
   })
   .readonly();
 export interface Target extends z.infer<typeof Target> {}

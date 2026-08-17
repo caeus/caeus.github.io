@@ -34,7 +34,7 @@ describe('buildRunner', () => {
   const stubDeps: TargetRunnerDeps = {
     renderDockerfile: () => 'FROM scratch\n',
     buildDockerImage: stubBuild,
-    extractFromImage: async () => [],
+    extractFromImage: async () => {},
   }
 
   const makeProject = (): Map<string, ModuleDef> =>

@@ -1,12 +1,12 @@
 import { join } from 'node:path'
-import type { Target } from '../project/schema.js'
+import type { Target, ExportEntry } from '../project/schema.js'
 import type { BuildResult } from './docker-builder.js'
 import type { TaskResult } from './index.js'
 
 export interface TargetRunnerDeps {
   renderDockerfile(run: ReturnType<Target['run']>): string
   buildDockerImage(content: string, tag: string, context: string): Promise<BuildResult>
-  extractFromImage(imageTag: string, outputGlobs: readonly string[], destDir: string): Promise<readonly string[]>
+  extractFromImage(imageTag: string, exports: readonly ExportEntry[], destDir: string): Promise<void>
 }
 
 export async function runTarget(fqt: string, target: Target, depResults: TaskResult[], root: string, deps: TargetRunnerDeps): Promise<TaskResult> {

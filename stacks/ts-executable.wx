@@ -44,12 +44,12 @@ export function ciSuite({ name, scope, deps = [] }) {
         ...localDeps.map(d => ({
           COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
         })),
+        { WORKDIR: '/repo' },
         writeJson('/repo/package.json', packageJson),
         writeJson('/repo/tsconfig.json', TSCONFIG),
         writeJson('/repo/.prettierrc.json', PRETTIERRC),
         writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
         writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true, sharp: true, workerd: true } }),
-        { WORKDIR: '/repo' },
         { RUN: 'pnpm install --prod=false' },
       ]
     },

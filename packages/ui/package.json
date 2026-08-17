@@ -6,9 +6,12 @@
   "imports": {
     "#*": "./src/*"
   },
-  "pnpm": { "onlyBuiltDependencies": ["esbuild"] },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
   "dependencies": {
-    "@caeus/common": "workspace:*",
     "@tailwindcss/vite": "4.3.3",
     "@vitejs/plugin-react": "4.7.0",
     "class-variance-authority": "0.7.1",
@@ -19,7 +22,8 @@
     "tailwind-merge": "3.6.0",
     "tailwindcss": "4.3.3",
     "wyr-ts": "2.0.2-rc1",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "@caeus/common": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/strictest": "2.0.8",

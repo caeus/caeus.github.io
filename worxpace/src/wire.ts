@@ -1,4 +1,4 @@
-import { resolve } from 'node:path'
+import { resolve, relative } from 'node:path'
 import { AsyncDisposeStack, createKey, createModule, Module } from './di-container.js'
 import { loadProjects, type ProjectLoader } from './project/loader.js'
 import type { Run, ProjectFile } from './project/schema.js'
@@ -23,6 +23,7 @@ export interface DockerImageExtractor {
 
 const rootKey = createKey<string>('root')
 const hostRootKey = createKey<string>('hostRoot')
+const currentModuleKey = createKey<string>('currentModule')
 const projectLoaderKey = createKey<ProjectLoader>('projectFinder')
 const projectsKey = createKey<Map<string, ProjectFile>>('projects')
 const dockerfileRendererKey = createKey<DockerfileRenderer>('dockerfileRenderer')
@@ -39,6 +40,7 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
   return createModule()
     .bind(rootKey).toValue(env['REPO_ROOT'] ?? resolve(new URL('../../', import.meta.url).pathname))
     .bind(hostRootKey).toFun([rootKey], root => env['HOST_REPO_ROOT'] ?? root)
+    .bind(currentModuleKey).toFun([hostRootKey], hostRoot => relative(hostRoot, env['WORKING_DIR'] ?? hostRoot))
     .bind(projectLoaderKey).toValue({ loadProjects } satisfies ProjectLoader)
     .bind(dockerfileRendererKey).toValue({ renderDockerfile } satisfies DockerfileRenderer)
     .bind(dockerImageBuilderKey).toValue({ buildDockerImage } satisfies DockerImageBuilder)
@@ -53,7 +55,7 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
       })
     )
     .bind(listCommandRunnerKey).toClass([projectsKey], ListCommandRunner)
-    .bind(runCommandRunnerKey).toClass([projectsKey, runnerKey, dockerImageExtractorKey, hostRootKey], RunCommandRunner)
+    .bind(runCommandRunnerKey).toClass([projectsKey, runnerKey, dockerImageExtractorKey, hostRootKey, currentModuleKey], RunCommandRunner)
     .bind(commandRunnerKey).toClass([runCommandRunnerKey, listCommandRunnerKey], CompositeCommandRunner)
 }
 

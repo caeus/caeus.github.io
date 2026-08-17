@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "node --experimental-vm-modules --import tsx/esm src/index.ts",
     "test": "node --import tsx/esm --test --test-reporter=spec 'src/**/*.test.ts'"
   },
   "devDependencies": {

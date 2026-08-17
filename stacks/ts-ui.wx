@@ -4,7 +4,6 @@ import { buildPackageJson } from 'wx:/stacks/utils'
 const forgeEngine = 'packages/forge#ci#engine'
 const forgePnpmfile = 'packages/forge#ci#pnpmfile'
 const forgeTsUi = 'packages/forge#ci#ts-ui'
-const commonPack = 'packages/common#ci#pack'
 
 const CORE_DEPS = [
   '@tailwindcss/vite', '@vitejs/plugin-react',
@@ -21,6 +20,8 @@ const CORE_DEV_DEPS = [
 ]
 
 export function ciSuite({ name, scope, outDir, deps = [] }) {
+  const localDeps = deps.filter(d => 'local' in d)
+  const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
   const packageJson = buildPackageJson({
     name, scope, deps,
     coreDeps: CORE_DEPS,
@@ -54,12 +55,14 @@ export function ciSuite({ name, scope, outDir, deps = [] }) {
       ]
     },
     install: {
-      deps: [commonPack, 'scaffold', 'pnpmfile'],
+      deps: [...packTargets, 'scaffold', 'pnpmfile'],
       exports: ['/repo/node_modules'],
       run: (deps) => [
         { FROM: 'node:22-alpine' },
         { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },
-        { COPY: { from: deps[commonPack], src: `/out/${scope}-common-0.0.0.tgz`, dest: '/repo/common.tgz' } },
+        ...localDeps.map(d => ({
+          COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
+        })),
         { COPY: { from: deps['pnpmfile'], src: '/out/.pnpmfile.cjs', dest: '/repo/.pnpmfile.cjs' } },
         { COPY: { from: deps['scaffold'], src: '/out/package.json', dest: '/repo/package.json' } },
         { WORKDIR: '/repo' },

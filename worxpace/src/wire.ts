@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import { AsyncDisposeStack, createKey, createModule, Module } from './di-container.js'
-import { findProjects, type ProjectFinder } from './project/finder.js'
+import { loadProjects, type ProjectLoader } from './project/loader.js'
 import type { Run, ProjectFile } from './project/schema.js'
 import { buildRunner, type Runner } from './runner/index.js'
 import type { BuildResult } from './runner/docker-builder.js'
@@ -23,7 +23,7 @@ export interface DockerImageExtractor {
 
 const rootKey = createKey<string>('root')
 const hostRootKey = createKey<string>('hostRoot')
-const projectFinderKey = createKey<ProjectFinder>('projectFinder')
+const projectLoaderKey = createKey<ProjectLoader>('projectFinder')
 const projectsKey = createKey<Map<string, ProjectFile>>('projects')
 const dockerfileRendererKey = createKey<DockerfileRenderer>('dockerfileRenderer')
 const dockerImageBuilderKey = createKey<DockerImageBuilder>('dockerImageBuilder')
@@ -39,11 +39,11 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
   return createModule()
     .bind(rootKey).toValue(env['REPO_ROOT'] ?? resolve(new URL('../../', import.meta.url).pathname))
     .bind(hostRootKey).toFun([rootKey], root => env['HOST_REPO_ROOT'] ?? root)
-    .bind(projectFinderKey).toValue({ findProjects } satisfies ProjectFinder)
+    .bind(projectLoaderKey).toValue({ loadProjects } satisfies ProjectLoader)
     .bind(dockerfileRendererKey).toValue({ renderDockerfile } satisfies DockerfileRenderer)
     .bind(dockerImageBuilderKey).toValue({ buildDockerImage } satisfies DockerImageBuilder)
     .bind(dockerImageExtractorKey).toValue({ extractFromImage } satisfies DockerImageExtractor)
-    .bind(projectsKey).toFun([rootKey, projectFinderKey], (root, finder) => finder.findProjects(root))
+    .bind(projectsKey).toFun([rootKey, projectLoaderKey], (root, loader) => loader.loadProjects(root))
     .bind(runnerKey).toFun(
       [rootKey, projectsKey, dockerfileRendererKey, dockerImageBuilderKey, dockerImageExtractorKey],
       (root, projects, renderer, builder, extractor) => buildRunner(root, projects, {

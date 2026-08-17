@@ -5,8 +5,8 @@ import { ProjectFile } from './schema.js'
 
 const WX_PREFIX = 'wx:/'
 
-export interface ProjectFinder {
-  findProjects(root: string): Promise<Map<string, ProjectFile>>
+export interface ProjectLoader {
+  loadProjects(root: string): Promise<Map<string, ProjectFile>>
 }
 
 async function loadProject(filePath: string, root: string): Promise<ProjectFile | null> {
@@ -35,7 +35,7 @@ async function loadProject(filePath: string, root: string): Promise<ProjectFile 
   return result.success ? result.data : null
 }
 
-export async function findProjects(root: string): Promise<Map<string, ProjectFile>> {
+export async function loadProjects(root: string): Promise<Map<string, ProjectFile>> {
   const result = new Map<string, ProjectFile>()
   const rootEntries = await readdir(root, { withFileTypes: true })
   if (rootEntries.some(e => !e.isDirectory() && e.name === 'project.js')) {

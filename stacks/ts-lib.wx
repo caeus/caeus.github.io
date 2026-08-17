@@ -40,13 +40,20 @@ export function ciSuite({ name, scope, deps = [] }) {
         { RUN: 'pnpm install --ignore-workspace --prod=false' },
       ]
     },
-    pack: {
+    build: {
       deps: ['install'],
       run: (deps) => [
         { FROM: deps['install'] },
         { COPY: { src: '.', dest: '/repo' } },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm exec tsc --outDir dist --declaration --noEmit false' },
+      ]
+    },
+    pack: {
+      deps: ['build'],
+      run: (deps) => [
+        { FROM: deps['build'] },
+        { WORKDIR: '/repo' },
         { RUN: 'pnpm pack --pack-destination /out' },
       ]
     },

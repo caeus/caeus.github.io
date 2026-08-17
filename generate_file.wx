@@ -1,9 +1,24 @@
-function shellEscape(content) {
-  return content.replace(/'/g, "'\\''")
+function base64Encode(str) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  const bytes = []
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i)
+    if (c < 0x80) bytes.push(c)
+    else if (c < 0x800) bytes.push((c >> 6) | 0xc0, (c & 0x3f) | 0x80)
+    else bytes.push((c >> 12) | 0xe0, ((c >> 6) & 0x3f) | 0x80, (c & 0x3f) | 0x80)
+  }
+  let result = ''
+  for (let i = 0; i < bytes.length; i += 3) {
+    result += chars[bytes[i] >> 2]
+    result += chars[((bytes[i] & 3) << 4) | ((bytes[i + 1] ?? 0) >> 4)]
+    result += i + 1 < bytes.length ? chars[((bytes[i + 1] & 0xf) << 2) | ((bytes[i + 2] ?? 0) >> 6)] : '='
+    result += i + 2 < bytes.length ? chars[bytes[i + 2] & 0x3f] : '='
+  }
+  return result
 }
 
 export function writeText(path, content) {
-  return { RUN: `printf '%s' '${shellEscape(content)}' > ${path}` }
+  return { RUN: `echo "${base64Encode(content)}" | base64 -d > ${path}` }
 }
 
 export function writeJson(path, value) {

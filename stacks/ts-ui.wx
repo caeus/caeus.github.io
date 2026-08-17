@@ -1,5 +1,5 @@
 import versions from 'wx:/versions'
-import { buildPackageJson } from 'wx:/stacks/utils'
+import { buildPackageJson, pnpmfile } from 'wx:/stacks/utils'
 import { writeJson, writeYaml, writeText } from 'wx:/generate_file'
 
 const CORE_DEPS = [
@@ -70,8 +70,7 @@ export default mergeConfig(
 )
 `
 
-function viteConfig(outDir) {
-  return `import { fileURLToPath, URL } from 'node:url'
+const viteConfig = (outDir) => `import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -87,26 +86,6 @@ export default defineConfig({
   },
 })
 `
-}
-
-function pnpmfile(scope) {
-  return `function readPackage(pkg) {
-  for (const depField of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
-    const deps = pkg[depField]
-    if (!deps) continue
-    for (const [name, version] of Object.entries(deps)) {
-      if (version.startsWith('workspace:')) {
-        const tarball = name.replace(/^@${scope}\\//, '').replace(/\\//g, '-')
-        deps[name] = \`file:./\${tarball}.tgz\`
-      }
-    }
-  }
-  return pkg
-}
-
-module.exports = { hooks: { readPackage } }
-`
-}
 
 export function ciSuite({ name, scope, outDir, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)

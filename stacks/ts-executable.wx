@@ -1,5 +1,5 @@
 import versions from 'wx:/versions'
-import { buildPackageJson } from 'wx:/stacks/utils'
+import { buildPackageJson, pnpmfile } from 'wx:/stacks/utils'
 import { writeJson, writeYaml, writeText } from 'wx:/generate_file'
 
 const CORE_DEV_DEPS = ['@tsconfig/strictest', '@cloudflare/workers-types', 'typescript', 'wrangler']
@@ -25,25 +25,6 @@ const PRETTIERRC = {
   singleQuote: true,
   printWidth: 100,
   trailingComma: 'none',
-}
-
-function pnpmfile(scope) {
-  return `function readPackage(pkg) {
-  for (const depField of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
-    const deps = pkg[depField]
-    if (!deps) continue
-    for (const [name, version] of Object.entries(deps)) {
-      if (version.startsWith('workspace:')) {
-        const tarball = name.replace(/^@${scope}\\//, '').replace(/\\//g, '-')
-        deps[name] = \`file:./\${tarball}.tgz\`
-      }
-    }
-  }
-  return pkg
-}
-
-module.exports = { hooks: { readPackage } }
-`
 }
 
 export function ciSuite({ name, scope, deps = [] }) {

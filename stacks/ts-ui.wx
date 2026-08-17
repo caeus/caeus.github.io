@@ -1,9 +1,38 @@
+import versions from 'wx:/versions'
+import { buildPackageJson } from 'wx:/stacks/utils'
+
 const forgeEngine = 'packages/forge#ci#engine'
 const forgePnpmfile = 'packages/forge#ci#pnpmfile'
 const forgeTsUi = 'packages/forge#ci#ts-ui'
 const commonPack = 'packages/common#ci#pack'
 
-export function ciSuite({ name, scope, outDir }) {
+const CORE_DEPS = [
+  '@tailwindcss/vite', '@vitejs/plugin-react',
+  'class-variance-authority', 'clsx',
+  'react', 'react-dom', 'react-router-dom',
+  'tailwind-merge', 'tailwindcss',
+  'wyr-ts', 'zod',
+]
+
+const CORE_DEV_DEPS = [
+  '@tsconfig/strictest', '@types/node', '@types/react', '@types/react-dom',
+  '@typescript-eslint/eslint-plugin', '@typescript-eslint/parser',
+  'eslint', 'prettier', 'typescript', 'vite',
+]
+
+export function ciSuite({ name, scope, outDir, deps = [] }) {
+  const packageJson = buildPackageJson({
+    name, scope, deps,
+    coreDeps: CORE_DEPS,
+    coreDevDeps: CORE_DEV_DEPS,
+    extra: {
+      imports: { '#*': './src/*' },
+      pnpm: { onlyBuiltDependencies: ['esbuild'] },
+    },
+    versions,
+  })
+  const scaffoldData = JSON.stringify({ scope, name, outDir, packageJson })
+
   return {
     scaffold: {
       deps: [forgeEngine, forgeTsUi],
@@ -12,7 +41,7 @@ export function ciSuite({ name, scope, outDir }) {
         { FROM: 'node:22-alpine' },
         { COPY: { from: deps[forgeEngine], src: '/forge', dest: '/forge' } },
         { COPY: { from: deps[forgeTsUi], src: '/forge/templates/ts-ui', dest: '/forge/templates/ts-ui' } },
-        { RUN: `node /forge/engine.js --template /forge/templates/ts-ui --data '${JSON.stringify({ scope, name, outDir })}' --out /out` },
+        { RUN: `node /forge/engine.js --template /forge/templates/ts-ui --data '${scaffoldData}' --out /out` },
       ]
     },
     pnpmfile: {

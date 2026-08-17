@@ -1,0 +1,22 @@
+export function buildPackageJson({ name, scope, deps = [], coreDeps = [], coreDevDeps = [], extra = {}, versions }) {
+  const dependencies = Object.fromEntries([
+    ...coreDeps.map(pkg => [pkg, versions[pkg]]),
+    ...deps.map(d =>
+      'local' in d
+        ? [`@${scope}/${d.local}`, 'workspace:*']
+        : [d.remote, versions[d.remote]]
+    )
+  ])
+  const devDependencies = Object.fromEntries(
+    coreDevDeps.map(pkg => [pkg, versions[pkg]])
+  )
+  return {
+    name: `@${scope}/${name}`,
+    version: '0.0.0',
+    private: true,
+    type: 'module',
+    ...extra,
+    dependencies,
+    devDependencies,
+  }
+}

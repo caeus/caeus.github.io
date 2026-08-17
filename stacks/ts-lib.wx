@@ -1,4 +1,11 @@
-export function ciSuite({ name, scope }) {
+import versions from 'wx:/versions'
+import { buildPackageJson } from 'wx:/stacks/utils'
+
+const CORE_DEV_DEPS = ['@tsconfig/strictest', 'typescript']
+
+export function ciSuite({ name, scope, deps = [] }) {
+  const pkgJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
+
   return {
     install: {
       deps: [],
@@ -6,7 +13,7 @@ export function ciSuite({ name, scope }) {
       run: (_deps) => [
         { FROM: 'node:22-alpine' },
         { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },
-        { COPY: { src: 'package.json', dest: '/repo/package.json' } },
+        { RUN: `echo '${JSON.stringify(pkgJson)}' > /repo/package.json` },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm install --ignore-workspace --prod=false' },
       ]

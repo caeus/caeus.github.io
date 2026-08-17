@@ -1,5 +1,13 @@
 import { ciSuite } from 'wx:/stacks/ts-lib'
 
 export default {
-  ci: ciSuite({ name: 'common', scope: 'caeus' })
+  ci: ciSuite({
+    name: 'common',
+    scope: 'caeus',
+    deps: [
+      { remote: '@orpc/contract' },
+      { remote: '@orpc/zod' },
+      { remote: 'zod' },
+    ]
+  })
 }

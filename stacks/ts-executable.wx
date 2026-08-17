@@ -1,8 +1,15 @@
+import versions from 'wx:/versions'
+import { buildPackageJson } from 'wx:/stacks/utils'
+
 const forgeEngine = 'packages/forge#ci#engine'
 const forgePnpmfile = 'packages/forge#ci#pnpmfile'
 const commonPack = 'packages/common#ci#pack'
 
-export function ciSuite({ name, scope }) {
+const CORE_DEV_DEPS = ['@tsconfig/strictest', '@cloudflare/workers-types', 'typescript', 'wrangler']
+
+export function ciSuite({ name, scope, deps = [] }) {
+  const pkgJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
+
   return {
     pnpmfile: {
       deps: [forgeEngine, forgePnpmfile],
@@ -21,7 +28,7 @@ export function ciSuite({ name, scope }) {
         { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },
         { COPY: { from: deps[commonPack], src: `/out/${scope}-common-0.0.0.tgz`, dest: '/repo/common.tgz' } },
         { COPY: { from: deps['pnpmfile'], src: '/out/.pnpmfile.cjs', dest: '/repo/.pnpmfile.cjs' } },
-        { COPY: { src: 'package.json', dest: '/repo/package.json' } },
+        { RUN: `echo '${JSON.stringify(pkgJson)}' > /repo/package.json` },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm install --ignore-workspace --prod=false' },
       ]

@@ -1,5 +1,12 @@
 import { ciSuite } from 'wx:/stacks/ts-ui'
 
 export default {
-  ci: ciSuite({ name: 'ui', scope: 'caeus', outDir: '../../docs' })
+  ci: ciSuite({
+    name: 'ui',
+    scope: 'caeus',
+    outDir: '../../docs',
+    deps: [
+      { local: 'common' },
+    ]
+  })
 }

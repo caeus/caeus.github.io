@@ -10,7 +10,10 @@ const CORE_DEV_DEPS = ['@tsconfig/strictest', '@cloudflare/workers-types', 'type
 export function ciSuite({ name, scope, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
-  const packageJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
+  const packageJson = buildPackageJson({
+    name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions,
+    extra: { pnpm: { onlyBuiltDependencies: ['esbuild', 'sharp', 'workerd'] } }
+  })
   const scaffoldData = JSON.stringify({ scope, name, packageJson })
 
   return {
@@ -45,7 +48,7 @@ export function ciSuite({ name, scope, deps = [] }) {
         { COPY: { from: deps['pnpmfile'], src: '/out/.pnpmfile.cjs', dest: '/repo/.pnpmfile.cjs' } },
         { COPY: { from: deps['scaffold'], src: '/out/package.json', dest: '/repo/package.json' } },
         { WORKDIR: '/repo' },
-        { RUN: 'pnpm install --ignore-workspace --prod=false' },
+        { RUN: 'printf "allowBuilds:\\n  esbuild: true\\n  sharp: true\\n  workerd: true\\n" > pnpm-workspace.yaml && pnpm install --prod=false' },
       ]
     },
     typecheck: {

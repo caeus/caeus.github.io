@@ -29,7 +29,7 @@ export interface CommandRunner {
 }
 
 export class ListCommandRunner implements CommandRunner {
-  constructor(private readonly projects: Map<string, ProjectFile>) {}
+  constructor(private readonly projects: ReadonlyMap<string, ProjectFile>) {}
 
   async execute(_cmd: Cmd): Promise<void> {
     const graph = new Map<string, readonly string[]>()
@@ -67,7 +67,7 @@ export class ListCommandRunner implements CommandRunner {
 
 export class RunCommandRunner implements CommandRunner {
   constructor(
-    private readonly projects: Map<string, ProjectFile>,
+    private readonly projects: ReadonlyMap<string, ProjectFile>,
     private readonly runner: Runner,
     private readonly extractor: DockerImageExtractor,
     private readonly root: string,

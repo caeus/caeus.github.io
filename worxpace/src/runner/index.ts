@@ -30,7 +30,7 @@ export type Runner = (fqt: string) => Promise<TaskResult>
 
 export { type TargetRunnerDeps }
 
-export function buildRunner(root: string, projects: Map<string, ProjectFile>, deps: TargetRunnerDeps): Runner {
+export function buildRunner(root: string, projects: ReadonlyMap<string, ProjectFile>, deps: TargetRunnerDeps): Runner {
   const memo = new Map<string, Promise<TaskResult>>()
 
   const run = (fqt: string, trace: readonly string[] = []): Promise<TaskResult> => {

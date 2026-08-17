@@ -7,13 +7,20 @@ const WX_PREFIX = 'wx:/'
 const BUILD_FILE = 'build.wx'
 
 export interface ProjectLoader {
-  loadProjects(root: string): Promise<Map<string, ProjectFile>>
+  loadProjects(root: string): Promise<ReadonlyMap<string, ProjectFile>>
 }
 
 interface LoadContext {
   readonly root: string
   readonly context: vm.Context
   readonly cache: Map<string, vm.SourceTextModule>
+}
+
+function deepFreeze<T>(value: T): T {
+  if (value === null || (typeof value !== 'object' && typeof value !== 'function')) return value
+  Object.freeze(value)
+  for (const v of Object.values(value as object)) deepFreeze(v)
+  return value
 }
 
 async function link(specifier: string, ctx: LoadContext): Promise<vm.SourceTextModule> {
@@ -38,10 +45,10 @@ async function loadProject(filePath: string, ctx: LoadContext): Promise<ProjectF
   await mod.evaluate()
   const defaultExport = (mod.namespace as Record<string, unknown>)['default']
   const result = ProjectFile.safeParse(defaultExport)
-  return result.success ? result.data : null
+  return result.success ? deepFreeze(result.data) : null
 }
 
-export async function loadProjects(root: string): Promise<Map<string, ProjectFile>> {
+export async function loadProjects(root: string): Promise<ReadonlyMap<string, ProjectFile>> {
   const ctx: LoadContext = {
     root,
     context: vm.createContext(Object.create(null)),
@@ -54,7 +61,7 @@ export async function loadProjects(root: string): Promise<Map<string, ProjectFil
     if (project) result.set('.', project)
   }
   await walk(resolve(root, 'packages'), ctx, result)
-  return result
+  return Object.freeze(result)
 }
 
 async function walk(dir: string, ctx: LoadContext, acc: Map<string, ProjectFile>): Promise<void> {

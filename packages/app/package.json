@@ -3,14 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  },
   "dependencies": {
     "@caeus/common": "workspace:*",
     "@orpc/server": "1.14.14",
     "wyr-ts": "2.0.2-rc1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "4.20250620.0",
     "@tsconfig/strictest": "2.0.8",
+    "@cloudflare/workers-types": "4.20250620.0",
     "typescript": "6.0.3",
     "wrangler": "4.0.0"
   }

@@ -1,6 +1,6 @@
 import versions from 'wx:/versions'
-import { buildPackageJson } from 'wx:/stacks/utils'
-import { writeJson } from 'wx:/generate_file'
+import { buildPackageJson, pnpmfile } from 'wx:/stacks/utils'
+import { writeJson, writeText } from 'wx:/generate_file'
 
 const CORE_DEV_DEPS = ['@tsconfig/strictest', 'typescript']
 
@@ -27,6 +27,8 @@ const PRETTIERRC = {
 }
 
 export function ciSuite({ name, scope, deps = [] }) {
+  const localDeps = deps.filter(d => 'local' in d)
+  const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
   const packageJson = buildPackageJson({
     name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions,
     extra: {
@@ -39,16 +41,20 @@ export function ciSuite({ name, scope, deps = [] }) {
 
   return {
     install: {
-      deps: [],
+      deps: packTargets,
       exports: ['/repo/node_modules'],
-      run: (_deps) => [
+      run: (deps) => [
         { FROM: 'node:22-alpine' },
         { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },
+        ...localDeps.map(d => ({
+          COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
+        })),
         writeJson('/repo/package.json', packageJson),
         writeJson('/repo/tsconfig.json', TSCONFIG),
         writeJson('/repo/.prettierrc.json', PRETTIERRC),
+        writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
         { WORKDIR: '/repo' },
-        { RUN: 'pnpm install --ignore-workspace --prod=false' },
+        { RUN: 'pnpm install --prod=false' },
       ]
     },
     build: {

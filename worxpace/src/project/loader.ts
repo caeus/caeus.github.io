@@ -9,26 +9,29 @@ export interface ProjectLoader {
   loadProjects(root: string): Promise<Map<string, ProjectFile>>
 }
 
-async function loadProject(filePath: string, root: string): Promise<ProjectFile | null> {
-  const context = vm.createContext(Object.create(null))
-  const cache = new Map<string, vm.SourceTextModule>()
+interface LoadContext {
+  readonly root: string
+  readonly context: vm.Context
+  readonly cache: Map<string, vm.SourceTextModule>
+}
 
-  async function link(specifier: string): Promise<vm.SourceTextModule> {
-    if (!specifier.startsWith(WX_PREFIX))
-      throw new Error(`Only wx:/ imports are allowed in project.js, got: ${specifier}`)
-    const path = resolve(root, specifier.slice(WX_PREFIX.length))
-    const cached = cache.get(path)
-    if (cached) return cached
-    const code = await readFile(path, 'utf-8')
-    const mod = new vm.SourceTextModule(code, { context, identifier: path })
-    cache.set(path, mod)
-    await mod.link(link)
-    return mod
-  }
+async function link(specifier: string, ctx: LoadContext): Promise<vm.SourceTextModule> {
+  if (!specifier.startsWith(WX_PREFIX))
+    throw new Error(`Only wx:/ imports are allowed in project.js, got: ${specifier}`)
+  const path = resolve(ctx.root, specifier.slice(WX_PREFIX.length))
+  const cached = ctx.cache.get(path)
+  if (cached) return cached
+  const code = await readFile(path, 'utf-8')
+  const mod = new vm.SourceTextModule(code, { context: ctx.context, identifier: path })
+  ctx.cache.set(path, mod)
+  await mod.link((s) => link(s, ctx))
+  return mod
+}
 
+async function loadProject(filePath: string, ctx: LoadContext): Promise<ProjectFile | null> {
   const code = await readFile(filePath, 'utf-8')
-  const mod = new vm.SourceTextModule(code, { context, identifier: filePath })
-  await mod.link(link)
+  const mod = new vm.SourceTextModule(code, { context: ctx.context, identifier: filePath })
+  await mod.link((s) => link(s, ctx))
   await mod.evaluate()
   const defaultExport = (mod.namespace as Record<string, unknown>)['default']
   const result = ProjectFile.safeParse(defaultExport)
@@ -36,28 +39,32 @@ async function loadProject(filePath: string, root: string): Promise<ProjectFile 
 }
 
 export async function loadProjects(root: string): Promise<Map<string, ProjectFile>> {
+  const ctx: LoadContext = {
+    root,
+    context: vm.createContext(Object.create(null)),
+    cache: new Map(),
+  }
   const result = new Map<string, ProjectFile>()
   const rootEntries = await readdir(root, { withFileTypes: true })
   if (rootEntries.some(e => !e.isDirectory() && e.name === 'project.js')) {
-    const project = await loadProject(resolve(root, 'project.js'), root)
+    const project = await loadProject(resolve(root, 'project.js'), ctx)
     if (project) result.set('.', project)
   }
   const packagesRoot = resolve(root, 'packages')
-  await walk(root, packagesRoot, result)
+  await walk(packagesRoot, ctx, result)
   return result
 }
 
-async function walk(root: string, dir: string, acc: Map<string, ProjectFile>): Promise<void> {
+async function walk(dir: string, ctx: LoadContext, acc: Map<string, ProjectFile>): Promise<void> {
   const entries = await readdir(dir, { withFileTypes: true })
-  const hasProjectJs = entries.some(e => !e.isDirectory() && e.name === 'project.js')
-  if (hasProjectJs) {
-    const project = await loadProject(resolve(dir, 'project.js'), root)
-    if (project) acc.set(relative(root, dir), project)
+  if (entries.some(e => !e.isDirectory() && e.name === 'project.js')) {
+    const project = await loadProject(resolve(dir, 'project.js'), ctx)
+    if (project) acc.set(relative(ctx.root, dir), project)
     return
   }
   await Promise.all(
     entries
       .filter(e => e.isDirectory())
-      .map(e => walk(root, resolve(dir, e.name), acc))
+      .map(e => walk(resolve(dir, e.name), ctx, acc))
   )
 }

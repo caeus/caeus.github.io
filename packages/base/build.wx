@@ -1,0 +1,13 @@
+import { PNPM_VERSION } from 'wx:/versions'
+
+export default {
+  ci: {
+    'node-pnpm': {
+      deps: [],
+      run: (_deps) => [
+        { FROM: 'node:22-alpine' },
+        { RUN: `corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate` },
+      ]
+    }
+  }
+}

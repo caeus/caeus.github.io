@@ -87,6 +87,8 @@ export default defineConfig({
 })
 `
 
+const BASE = 'packages/base#ci#node-pnpm'
+
 export function ciSuite({ name, scope, outDir, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
@@ -102,11 +104,10 @@ export function ciSuite({ name, scope, outDir, deps = [] }) {
 
   return {
     install: {
-      deps: packTargets,
+      deps: [...packTargets, BASE],
       exports: [{ from: '/repo/node_modules', to: 'node_modules' }],
       run: (deps) => [
-        { FROM: 'node:22-alpine' },
-        { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },
+        { FROM: deps[BASE] },
         ...localDeps.map(d => ({
           COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
         })),

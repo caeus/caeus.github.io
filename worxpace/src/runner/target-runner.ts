@@ -14,10 +14,9 @@ export async function runTarget(fqt: string, target: Target, depResults: TaskRes
   const moduleDir = join(root, moduleName)
   const tag = fqt.replace(/#/g, '-').replace(/\//g, '_').replace(/^[^a-zA-Z0-9]+/, '')
 
-  const depsMap: Record<string, string> = {}
-  for (let i = 0; i < target.deps.length; i++) {
-    depsMap[target.deps[i]!] = depResults[i]!.imageTag
-  }
+  const depsMap = Object.fromEntries(
+    target.deps.map((dep, i) => [dep, depResults[i]!.imageTag])
+  )
 
   const runDef = target.run(depsMap)
   const dockerfileContent = deps.renderDockerfile(runDef)

@@ -1,0 +1,13 @@
+import { ciSuite } from 'wx:/stacks/ts-executable'
+
+export default {
+  ci: ciSuite({
+    name: 'app',
+    scope: 'caeus',
+    deps: [
+      { local: 'common' },
+      { remote: '@orpc/server' },
+      { remote: 'wyr-ts' },
+    ]
+  })
+}

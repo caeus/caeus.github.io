@@ -7,7 +7,15 @@ const forgeTsLib = 'packages/forge#ci#ts-lib'
 const CORE_DEV_DEPS = ['@tsconfig/strictest', 'typescript']
 
 export function ciSuite({ name, scope, deps = [] }) {
-  const packageJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
+  const packageJson = buildPackageJson({
+    name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions,
+    extra: {
+      main: './dist/index.js',
+      types: './dist/index.d.ts',
+      exports: { '.': { import: './dist/index.js', types: './dist/index.d.ts' } },
+      files: ['dist'],
+    }
+  })
   const scaffoldData = JSON.stringify({ scope, name, packageJson })
 
   return {
@@ -38,6 +46,7 @@ export function ciSuite({ name, scope, deps = [] }) {
         { FROM: deps['install'] },
         { COPY: { src: '.', dest: '/repo' } },
         { WORKDIR: '/repo' },
+        { RUN: 'pnpm exec tsc --outDir dist --declaration --noEmit false' },
         { RUN: 'pnpm pack --pack-destination /out' },
       ]
     },

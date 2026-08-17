@@ -4,4 +4,4 @@ import { contract } from '@caeus/common'
 export { contract }
 export const os = implement(contract)
 export type Os = typeof os
-export type PartialRouter = Router<typeof contract, Record<never, never>>
+export interface PartialRouter extends Router<typeof contract, Record<never, never>>{}

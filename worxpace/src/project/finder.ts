@@ -1,7 +1,7 @@
 import vm from 'node:vm'
 import { readdir, readFile } from 'node:fs/promises'
 import { resolve, relative } from 'node:path'
-import type { ProjectFile } from './schema.js'
+import { ProjectFile } from './schema.js'
 
 export interface ProjectFinder {
   findProjects(root: string): Promise<Map<string, ProjectFile>>
@@ -16,8 +16,8 @@ async function loadProject(filePath: string): Promise<ProjectFile | null> {
   })
   await mod.evaluate()
   const defaultExport = (mod.namespace as Record<string, unknown>)['default']
-  if (defaultExport == null || typeof defaultExport !== 'object') return null
-  return defaultExport as ProjectFile
+  const result = ProjectFile.safeParse(defaultExport)
+  return result.success ? result.data : null
 }
 
 export async function findProjects(root: string): Promise<Map<string, ProjectFile>> {

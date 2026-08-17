@@ -40,8 +40,8 @@ describe('buildRunner', () => {
   const makeProject = (): Map<string, ProjectFile> =>
     new Map([['pkg', {
       ci: {
-        a: { deps: [], run: (_deps) => ({ FROM: 'alpine', steps: [] }) },
-        b: { deps: ['a'], run: (deps) => ({ FROM: deps['a']!, steps: [] }) },
+        a: { deps: [], run: (_d) => [{ FROM: 'alpine' }] },
+        b: { deps: ['a'], run: (d) => [{ FROM: d['a']! }] },
       }
     }]])
 
@@ -80,8 +80,8 @@ describe('buildRunner', () => {
     let receivedDeps: Record<string, string> = {}
     const project = new Map<string, ProjectFile>([['pkg', {
       ci: {
-        a: { deps: [], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
-        b: { deps: ['a'], run: (d) => { receivedDeps = {...d}; return { FROM: d['a']!, steps: [] } } },
+        a: { deps: [], run: (_d) => [{ FROM: 'alpine' }] },
+        b: { deps: ['a'], run: (d) => { receivedDeps = {...d}; return [{ FROM: d['a']! }] } },
       }
     }]])
     const runner = buildRunner('/', project, stubDeps)
@@ -98,8 +98,8 @@ describe('buildRunner', () => {
   it('detects circular dependencies', async () => {
     const circular = new Map<string, ProjectFile>([['pkg', {
       ci: {
-        a: { deps: ['b'], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
-        b: { deps: ['a'], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
+        a: { deps: ['b'], run: (_d) => [{ FROM: 'alpine' }] },
+        b: { deps: ['a'], run: (_d) => [{ FROM: 'alpine' }] },
       }
     }]])
     const runner = buildRunner('/', circular, stubDeps)

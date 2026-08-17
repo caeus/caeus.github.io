@@ -23,10 +23,5 @@ export async function runTarget(fqt: string, target: Target, depResults: TaskRes
   const dockerfileContent = deps.renderDockerfile(runDef)
   const { tag: imageTag, digest: imageDigest } = await deps.buildDockerImage(dockerfileContent, tag, moduleDir)
 
-  if (target.materialize === true && target.output && target.output.length > 0) {
-    const materializedPaths = await deps.extractFromImage(imageTag, target.output, moduleDir)
-    return { fqt, imageTag, imageDigest, materializedPaths }
-  }
-
   return { fqt, imageTag, imageDigest }
 }

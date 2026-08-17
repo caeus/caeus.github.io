@@ -6,7 +6,6 @@ export interface TaskResult {
   readonly fqt: string
   readonly imageTag: string
   readonly imageDigest: string
-  readonly materializedPaths?: readonly string[]
 }
 
 export interface FullyQualifiedTarget {

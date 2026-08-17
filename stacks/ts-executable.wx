@@ -3,15 +3,27 @@ import { buildPackageJson } from 'wx:/stacks/utils'
 
 const forgeEngine = 'packages/forge#ci#engine'
 const forgePnpmfile = 'packages/forge#ci#pnpmfile'
+const forgeTsExecutable = 'packages/forge#ci#ts-executable'
 
 const CORE_DEV_DEPS = ['@tsconfig/strictest', '@cloudflare/workers-types', 'typescript', 'wrangler']
 
 export function ciSuite({ name, scope, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
-  const pkgJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
+  const packageJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
+  const scaffoldData = JSON.stringify({ scope, name, packageJson })
 
   return {
+    scaffold: {
+      deps: [forgeEngine, forgeTsExecutable],
+      exports: ['/out/'],
+      run: (deps) => [
+        { FROM: 'node:22-alpine' },
+        { COPY: { from: deps[forgeEngine], src: '/forge', dest: '/forge' } },
+        { COPY: { from: deps[forgeTsExecutable], src: '/forge/templates/ts-executable', dest: '/forge/templates/ts-executable' } },
+        { RUN: `node /forge/engine.js --template /forge/templates/ts-executable --data '${scaffoldData}' --out /out` },
+      ]
+    },
     pnpmfile: {
       deps: [forgeEngine, forgePnpmfile],
       run: (deps) => [
@@ -22,7 +34,7 @@ export function ciSuite({ name, scope, deps = [] }) {
       ]
     },
     install: {
-      deps: [...packTargets, 'pnpmfile'],
+      deps: [...packTargets, 'scaffold', 'pnpmfile'],
       exports: ['/repo/node_modules'],
       run: (deps) => [
         { FROM: 'node:22-alpine' },
@@ -31,7 +43,7 @@ export function ciSuite({ name, scope, deps = [] }) {
           COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
         })),
         { COPY: { from: deps['pnpmfile'], src: '/out/.pnpmfile.cjs', dest: '/repo/.pnpmfile.cjs' } },
-        { RUN: `echo '${JSON.stringify(pkgJson)}' > /repo/package.json` },
+        { COPY: { from: deps['scaffold'], src: '/out/package.json', dest: '/repo/package.json' } },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm install --ignore-workspace --prod=false' },
       ]

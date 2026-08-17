@@ -1,19 +1,33 @@
 import versions from 'wx:/versions'
 import { buildPackageJson } from 'wx:/stacks/utils'
 
+const forgeEngine = 'packages/forge#ci#engine'
+const forgeTsLib = 'packages/forge#ci#ts-lib'
+
 const CORE_DEV_DEPS = ['@tsconfig/strictest', 'typescript']
 
 export function ciSuite({ name, scope, deps = [] }) {
-  const pkgJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
+  const packageJson = buildPackageJson({ name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions })
+  const scaffoldData = JSON.stringify({ scope, name, packageJson })
 
   return {
+    scaffold: {
+      deps: [forgeEngine, forgeTsLib],
+      exports: ['/out/'],
+      run: (deps) => [
+        { FROM: 'node:22-alpine' },
+        { COPY: { from: deps[forgeEngine], src: '/forge', dest: '/forge' } },
+        { COPY: { from: deps[forgeTsLib], src: '/forge/templates/ts-lib', dest: '/forge/templates/ts-lib' } },
+        { RUN: `node /forge/engine.js --template /forge/templates/ts-lib --data '${scaffoldData}' --out /out` },
+      ]
+    },
     install: {
-      deps: [],
+      deps: ['scaffold'],
       exports: ['/repo/node_modules'],
-      run: (_deps) => [
+      run: (deps) => [
         { FROM: 'node:22-alpine' },
         { RUN: 'corepack enable && corepack prepare pnpm@latest --activate' },
-        { RUN: `echo '${JSON.stringify(pkgJson)}' > /repo/package.json` },
+        { COPY: { from: deps['scaffold'], src: '/out/package.json', dest: '/repo/package.json' } },
         { WORKDIR: '/repo' },
         { RUN: 'pnpm install --ignore-workspace --prod=false' },
       ]

@@ -24,6 +24,7 @@ const listCommand = command(
 const parser = or(runCommand, listCommand);
 
 export type Cmd = InferValue<typeof parser>;
+export type RunCmd = Extract<Cmd, { command: 'run' }>
 
 export function parseCmd(args: string[]): Cmd {
   return run(parser, { args });
@@ -66,8 +67,6 @@ export class ListCommandRunner implements CommandRunner {
     }
   }
 }
-
-type RunCmd = Extract<Cmd, { command: 'run' }>
 
 export class RunCommandRunner {
   constructor(

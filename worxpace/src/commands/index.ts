@@ -7,24 +7,12 @@ import { resolve } from "node:path";
 import type { ModuleDef } from "../project/schema.js";
 import { FQT, type Runner } from "../runner/index.js";
 import type { DockerImageExtractor } from "../wire.js";
-const runCommand = command(
-  "run",
-  object({
-    command: constant("run" as const),
-    fqt: argument(string()),
-  }),
-);
-const listCommand = command(
-  "list",
-  object({
-    command: constant("list" as const),
-  }),
-);
+const runCommand = command('run', object({ command: constant('run'), fqt: argument(string()) }))
+const listCommand = command('list', object({ command: constant('list') }))
+const parser = or(runCommand, listCommand)
 
-const parser = or(runCommand, listCommand);
-
-export type Cmd = InferValue<typeof parser>;
-export type RunCmd = Extract<Cmd, { command: 'run' }>
+export type Cmd = InferValue<typeof parser>
+export type RunCmd = InferValue<typeof runCommand>
 
 export function parseCmd(args: string[]): Cmd {
   return run(parser, { args });
@@ -37,7 +25,7 @@ export interface CommandRunner {
 export class ListCommandRunner implements CommandRunner {
   constructor(private readonly projects: ReadonlyMap<string, ModuleDef>) {}
 
-  async execute(_cmd: Cmd): Promise<void> {
+  async execute(): Promise<void> {
     const graph = new Map<string, readonly string[]>();
 
     for (const [moduleName, suites] of this.projects) {
@@ -104,6 +92,6 @@ export class CompositeCommandRunner implements CommandRunner {
 
   execute(cmd: Cmd): Promise<void> {
     if (cmd.command === "run") return this.runRunner.execute(cmd);
-    return this.listRunner.execute(cmd);
+    return this.listRunner.execute();
   }
 }

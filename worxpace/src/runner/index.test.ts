@@ -58,7 +58,7 @@ describe('buildRunner', () => {
 
   it('runs a target with no deps', async () => {
     const runner = buildRunner('/', makeProject(), stubDeps)
-    const result = await runner('pkg#ci#a')
+    const result = await runner(FQT.parse('pkg#ci#a'))
     assert.equal(result.fqt.toString(), 'pkg#ci#a')
     assert.equal(result.imageTag, 'pkg-ci-a')
   })
@@ -70,7 +70,7 @@ describe('buildRunner', () => {
       buildDockerImage: async (_c, tag) => { calls++; return { tag, digest: `sha256:${tag}` } },
     }
     const runner = buildRunner('/', makeProject(), countingDeps)
-    await Promise.all([runner('pkg#ci#a'), runner('pkg#ci#a')])
+    await Promise.all([runner(FQT.parse('pkg#ci#a')), runner(FQT.parse('pkg#ci#a'))])
     assert.equal(calls, 1)
   })
 
@@ -81,7 +81,7 @@ describe('buildRunner', () => {
       buildDockerImage: async (_c, tag) => { order.push(tag); return { tag, digest: `sha256:${tag}` } },
     }
     const runner = buildRunner('/', makeProject(), orderDeps)
-    await runner('pkg#ci#b')
+    await runner(FQT.parse('pkg#ci#b'))
     assert.equal(order[0], 'pkg-ci-a')
     assert.equal(order[1], 'pkg-ci-b')
   })
@@ -95,13 +95,13 @@ describe('buildRunner', () => {
       }
     }]])
     const runner = buildRunner('/', project, stubDeps)
-    await runner('pkg#ci#b')
+    await runner(FQT.parse('pkg#ci#b'))
     assert.ok('a' in receivedDeps)
   })
 
   it('throws on unknown target', async () => {
     const runner = buildRunner('/', makeProject(), stubDeps)
-    await assert.rejects(() => Promise.resolve().then(() => runner('pkg#ci#missing')), /Unknown target/)
+    await assert.rejects(() => Promise.resolve().then(() => runner(FQT.parse('pkg#ci#missing'))), /Unknown target/)
   })
 
   it('detects circular dependencies', async () => {
@@ -112,6 +112,6 @@ describe('buildRunner', () => {
       }
     }]])
     const runner = buildRunner('/', circular, stubDeps)
-    await assert.rejects(() => Promise.resolve().then(() => runner('pkg#ci#a')), /Circular dependency/)
+    await assert.rejects(() => Promise.resolve().then(() => runner(FQT.parse('pkg#ci#a'))), /Circular dependency/)
   })
 })

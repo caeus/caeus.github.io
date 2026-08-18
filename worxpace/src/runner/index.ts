@@ -39,7 +39,7 @@ export interface TaskResult {
   readonly export?: Readonly<Record<string, string>>
 }
 
-export type Runner = (fqt: string) => Promise<TaskResult>
+export type Runner = (fqt: FQT) => Promise<TaskResult>
 
 export { type TargetRunnerDeps }
 
@@ -67,5 +67,5 @@ export function buildRunner(root: string, projects: ReadonlyMap<string, ModuleDe
     return promise
   }
 
-  return (raw: string) => run(raw)
+  return (fqt: FQT) => run(fqt.toString())
 }

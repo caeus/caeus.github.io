@@ -6,7 +6,8 @@ export function Nav() {
     <nav className="flex gap-6 text-sm font-medium">
       {[
         { to: '/articles', label: 'Articles' },
-        { to: '/oss', label: 'Open Source' }
+        { to: '/oss', label: 'Open Source' },
+        { to: '/resume', label: 'Résumé' }
       ].map(({ to, label }) => (
         <NavLink
           key={to}

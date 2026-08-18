@@ -20,6 +20,7 @@ export default {
   'eslint': '8.57.0',
   'prettier': '3.2.5',
   'react': '19.2.8',
+  'react-markdown': '10.1.0',
   'react-dom': '19.2.8',
   'react-router-dom': '7.18.2',
   'tailwind-merge': '3.6.0',

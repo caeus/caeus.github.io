@@ -8,6 +8,7 @@ const CORE_DEPS = [
   'react', 'react-dom', 'react-router-dom',
   'tailwind-merge', 'tailwindcss',
   'wyr-ts', 'zod',
+  'react-markdown',
 ]
 
 const CORE_DEV_DEPS = [

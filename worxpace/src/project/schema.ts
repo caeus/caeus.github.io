@@ -20,7 +20,7 @@ export type Step = z.infer<typeof Step>;
 export const Run = z
   .object({
     FROM: z.string(),
-    steps: z.array(Step).readonly().default([]),
+    steps: z.array(Step).readonly(),
     EXPORT: z.record(z.string(), z.string()).readonly().optional(),
   })
   .readonly();

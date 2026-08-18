@@ -1,4 +1,4 @@
-import { PNPM_VERSION } from 'wx:/versions'
+import { PNPM_VERSION } from 'wx:/lib/versions'
 
 export default {
   ci: {

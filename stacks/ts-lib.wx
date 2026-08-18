@@ -1,6 +1,6 @@
-import versions from 'wx:/versions'
+import versions from 'wx:/lib/versions'
 import { buildPackageJson, pnpmfile } from 'wx:/stacks/utils'
-import { writeJson, writeText } from 'wx:/generate_file'
+import { writeJson, writeText } from 'wx:/lib/file_utils'
 
 const CORE_DEV_DEPS = ['@tsconfig/strictest', 'typescript']
 
@@ -44,45 +44,53 @@ export function ciSuite({ name, scope, deps = [] }) {
   return {
     install: {
       deps: [...packTargets, BASE],
-      run: (deps) => [
-        { FROM: deps[BASE] },
-        ...localDeps.map(d => ({
-          COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
-        })),
-        { WORKDIR: '/repo' },
-        writeJson('/repo/package.json', packageJson),
-        writeJson('/repo/tsconfig.json', TSCONFIG),
-        writeJson('/repo/.prettierrc.json', PRETTIERRC),
-        writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
-        { RUN: 'pnpm install --prod=false' },
-        { EXPORT: { src: '/repo/node_modules', dest: 'node_modules' } },
-      ]
+      run: (deps) => ({
+        FROM: deps[BASE],
+        steps: [
+          ...localDeps.map(d => ({
+            COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
+          })),
+          { WORKDIR: '/repo' },
+          writeJson('/repo/package.json', packageJson),
+          writeJson('/repo/tsconfig.json', TSCONFIG),
+          writeJson('/repo/.prettierrc.json', PRETTIERRC),
+          writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
+          { RUN: 'pnpm install --prod=false' },
+        ],
+        EXPORT: { '/repo/node_modules': 'node_modules' },
+      })
     },
     build: {
       deps: ['install'],
-      run: (deps) => [
-        { FROM: deps['install'] },
-        { COPY: { src: 'src', dest: '/repo/src' } },
-        { WORKDIR: '/repo' },
-        { RUN: 'pnpm exec tsc --outDir dist --declaration --noEmit false' },
-      ]
+      run: (deps) => ({
+        FROM: deps['install'],
+        steps: [
+          { COPY: { src: 'src', dest: '/repo/src' } },
+          { WORKDIR: '/repo' },
+          { RUN: 'pnpm exec tsc --outDir dist --declaration --noEmit false' },
+        ]
+      })
     },
     pack: {
       deps: ['build'],
-      run: (deps) => [
-        { FROM: deps['build'] },
-        { WORKDIR: '/repo' },
-        { RUN: 'pnpm pack --pack-destination /out' },
-      ]
+      run: (deps) => ({
+        FROM: deps['build'],
+        steps: [
+          { WORKDIR: '/repo' },
+          { RUN: 'pnpm pack --pack-destination /out' },
+        ]
+      })
     },
     typecheck: {
       deps: ['install'],
-      run: (deps) => [
-        { FROM: deps['install'] },
-        { COPY: { src: 'src', dest: '/repo/src' } },
-        { WORKDIR: '/repo' },
-        { RUN: 'pnpm exec tsc --noEmit' },
-      ]
+      run: (deps) => ({
+        FROM: deps['install'],
+        steps: [
+          { COPY: { src: 'src', dest: '/repo/src' } },
+          { WORKDIR: '/repo' },
+          { RUN: 'pnpm exec tsc --noEmit' },
+        ]
+      })
     }
   }
 }

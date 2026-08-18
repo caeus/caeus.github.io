@@ -67,7 +67,6 @@ export class ListCommandRunner implements CommandRunner {
 
 export class RunCommandRunner implements CommandRunner {
   constructor(
-    private readonly projects: ReadonlyMap<string, ModuleDef>,
     private readonly runner: Runner,
     private readonly extractor: DockerImageExtractor,
     private readonly root: string,
@@ -80,16 +79,10 @@ export class RunCommandRunner implements CommandRunner {
     const fqt = fqtToString(parseFqt(cmd.fqt, { module: this.currentModule, suite: 'ci' }))
     const result = await this.runner(fqt)
 
-    const hashIndex = fqt.indexOf('#')
-    const secondHashIndex = fqt.indexOf('#', hashIndex + 1)
-    const moduleName = fqt.slice(0, hashIndex)
-    const suiteName = fqt.slice(hashIndex + 1, secondHashIndex)
-    const targetName = fqt.slice(secondHashIndex + 1)
-    const target = this.projects.get(moduleName)?.[suiteName]?.[targetName]
-
-    if (target?.exports && target.exports.length > 0) {
+    if (result.export) {
+      const moduleName = fqt.slice(0, fqt.indexOf('#'))
       const moduleDir = resolve(this.root, moduleName)
-      await this.extractor.extractFromImage(result.imageTag, target.exports, moduleDir)
+      await this.extractor.extractFromImage(result.imageTag, result.export, moduleDir)
     }
 
     console.log(`Done: ${fqt} (${result.imageTag})`)

@@ -105,7 +105,6 @@ export function ciSuite({ name, scope, outDir, deps = [] }) {
   return {
     install: {
       deps: [...packTargets, BASE],
-      exports: [{ from: '/repo/node_modules', to: 'node_modules' }],
       run: (deps) => [
         { FROM: deps[BASE] },
         ...localDeps.map(d => ({
@@ -121,6 +120,7 @@ export function ciSuite({ name, scope, outDir, deps = [] }) {
         writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
         writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
         { RUN: 'pnpm install --prod=false' },
+        { EXPORT: { src: '/repo/node_modules', dest: 'node_modules' } },
       ]
     },
     typecheck: {

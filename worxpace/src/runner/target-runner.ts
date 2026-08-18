@@ -6,7 +6,7 @@ import type { TaskResult } from './index.js'
 export interface TargetRunnerDeps {
   renderDockerfile(run: ReturnType<Target['run']>): string
   buildDockerImage(content: string, tag: string, context: string): Promise<BuildResult>
-  extractFromImage(imageTag: string, exports: readonly ExportEntry[], destDir: string): Promise<void>
+  extractFromImage(imageTag: string, entry: ExportEntry, destDir: string): Promise<void>
 }
 
 export async function runTarget(fqt: string, target: Target, depResults: TaskResult[], root: string, deps: TargetRunnerDeps): Promise<TaskResult> {
@@ -19,8 +19,15 @@ export async function runTarget(fqt: string, target: Target, depResults: TaskRes
   )
 
   const runDef = target.run(depsMap)
-  const dockerfileContent = deps.renderDockerfile(runDef)
+  const [fromStep, ...steps] = runDef
+  const lastStep = steps[steps.length - 1]
+  const exportEntry = lastStep && 'EXPORT' in lastStep ? lastStep.EXPORT : undefined
+  const dockerSteps = exportEntry ? steps.slice(0, -1) : steps
+
+  const dockerfileContent = deps.renderDockerfile([fromStep, ...dockerSteps])
   const { tag: imageTag, digest: imageDigest } = await deps.buildDockerImage(dockerfileContent, tag, moduleDir)
 
-  return { fqt, imageTag, imageDigest }
+  return exportEntry
+    ? { fqt, imageTag, imageDigest, export: exportEntry }
+    : { fqt, imageTag, imageDigest }
 }

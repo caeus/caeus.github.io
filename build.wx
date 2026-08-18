@@ -2,9 +2,9 @@ export default {
   ci: {
     deploy: {
       deps: ['packages/ui#ci#build'],
-      exports: [{ from: '/docs', to: 'docs' }],
       run: (deps) => [
         { FROM: deps['packages/ui#ci#build'] },
+        { EXPORT: { src: '/docs', dest: 'docs' } },
       ]
     }
   }

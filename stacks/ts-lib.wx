@@ -44,7 +44,6 @@ export function ciSuite({ name, scope, deps = [] }) {
   return {
     install: {
       deps: [...packTargets, BASE],
-      exports: [{ from: '/repo/node_modules', to: 'node_modules' }],
       run: (deps) => [
         { FROM: deps[BASE] },
         ...localDeps.map(d => ({
@@ -56,6 +55,7 @@ export function ciSuite({ name, scope, deps = [] }) {
         writeJson('/repo/.prettierrc.json', PRETTIERRC),
         writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
         { RUN: 'pnpm install --prod=false' },
+        { EXPORT: { src: '/repo/node_modules', dest: 'node_modules' } },
       ]
     },
     build: {

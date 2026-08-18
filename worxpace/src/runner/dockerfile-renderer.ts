@@ -17,6 +17,7 @@ export function renderDockerfile([{ FROM }, ...steps]: Run): string {
       if ('ENV' in step) return Object.entries(step.ENV).map(([k, v]) => `ENV ${k}=${v}`)
       if ('ENTRYPOINT' in step) return [`ENTRYPOINT ${JSON.stringify(step.ENTRYPOINT)}`]
       if ('CMD' in step) return [`CMD ${JSON.stringify(step.CMD)}`]
+      if ('EXPORT' in step) return []
       return []
     })
   ].join('\n') + '\n'

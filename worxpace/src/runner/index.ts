@@ -1,4 +1,4 @@
-import type { ModuleDef } from '../project/schema.js'
+import type { ModuleDef, ExportEntry } from '../project/schema.js'
 import { runTarget, type TargetRunnerDeps } from './target-runner.js'
 
 
@@ -6,6 +6,7 @@ export interface TaskResult {
   readonly fqt: string
   readonly imageTag: string
   readonly imageDigest: string
+  readonly export?: ExportEntry
 }
 
 export interface FullyQualifiedTarget {

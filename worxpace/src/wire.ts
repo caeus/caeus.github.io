@@ -18,7 +18,7 @@ export interface DockerImageBuilder {
 }
 
 export interface DockerImageExtractor {
-  extractFromImage(imageTag: string, exports: readonly ExportEntry[], destDir: string): Promise<void>
+  extractFromImage(imageTag: string, entry: ExportEntry, destDir: string): Promise<void>
 }
 
 const rootKey = createKey<string>('root')
@@ -51,11 +51,11 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
       (root, projects, renderer, builder, extractor) => buildRunner(root, projects, {
         renderDockerfile: (r) => renderer.renderDockerfile(r),
         buildDockerImage: (content, tag, context) => builder.buildDockerImage(content, tag, context),
-        extractFromImage: (imageTag, exports, destDir) => extractor.extractFromImage(imageTag, exports, destDir),
+        extractFromImage: (imageTag, entry, destDir) => extractor.extractFromImage(imageTag, entry, destDir),
       })
     )
     .bind(listCommandRunnerKey).toClass([modulesKey], ListCommandRunner)
-    .bind(runCommandRunnerKey).toClass([modulesKey, runnerKey, dockerImageExtractorKey, hostRootKey, currentModuleKey], RunCommandRunner)
+    .bind(runCommandRunnerKey).toClass([runnerKey, dockerImageExtractorKey, hostRootKey, currentModuleKey], RunCommandRunner)
     .bind(commandRunnerKey).toClass([runCommandRunnerKey, listCommandRunnerKey], CompositeCommandRunner)
 }
 

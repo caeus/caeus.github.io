@@ -6,6 +6,8 @@ import { connectApp } from '#app/index'
 import { connectLayout } from '#app/Layout'
 import { connectArticlesPage } from '#app/ArticlesPage'
 import { connectOssPage } from '#app/OssPage'
+import { connectResumePage } from '#resume/ResumePage'
+import resumeContent from '#resume/resume.md?raw'
 import './assets/main.css'
 import { connectArticles } from '#articles/Articles'
 import { raise } from '#utils/index'
@@ -23,7 +25,8 @@ const appModule = Module({
   Layout: toFactory(['Profile'], connectLayout),
   ArticlesPage: toFactory(['Articles'], connectArticlesPage),
   OssPage: toFactory(['Projects'], connectOssPage),
-  App: toFactory(['Layout', 'ArticlesPage', 'OssPage'], connectApp),
+  ResumePage: toValue(connectResumePage(resumeContent)),
+  App: toFactory(['Layout', 'ArticlesPage', 'OssPage', 'ResumePage'], connectApp),
   mountNode: toValue(document.getElementById('app') ?? raise(new Error('Mount node not found')))
 })
 

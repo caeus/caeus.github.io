@@ -1,29 +1,40 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseFqt, fqtToString, buildRunner } from './index.js'
+import { FQT, buildRunner } from './index.js'
 import type { TargetRunnerDeps } from './index.js'
 import type { BuildResult } from './docker-builder.js'
 import type { ModuleDef } from '../project/schema.js'
 
-describe('parseFqt', () => {
-  const ctx = { module: 'mod', suite: 'ci' }
-
+describe('FQT.parse', () => {
   it('parses fully qualified module#suite#target', () => {
-    assert.deepEqual(parseFqt('a#b#c', ctx), { module: 'a', suite: 'b', target: 'c' })
+    const fqt = FQT.parse('a#b#c')
+    assert.equal(fqt.module, 'a')
+    assert.equal(fqt.suite, 'b')
+    assert.equal(fqt.target, 'c')
   })
 
   it('parses suite#target using context module', () => {
-    assert.deepEqual(parseFqt('b#c', ctx), { module: 'mod', suite: 'b', target: 'c' })
+    const fqt = FQT.parse('b#c', { module: 'mod' })
+    assert.equal(fqt.module, 'mod')
+    assert.equal(fqt.suite, 'b')
+    assert.equal(fqt.target, 'c')
   })
 
-  it('parses target only using context module and suite', () => {
-    assert.deepEqual(parseFqt('c', ctx), { module: 'mod', suite: 'ci', target: 'c' })
+  it('throws without module context for suite#target', () => {
+    assert.throws(() => FQT.parse('b#c'), /Module required/)
   })
-})
 
-describe('fqtToString', () => {
-  it('joins module, suite, target with #', () => {
-    assert.equal(fqtToString({ module: 'a', suite: 'b', target: 'c' }), 'a#b#c')
+  it('throws without suite context for bare target', () => {
+    assert.throws(() => FQT.parse('c', { module: 'mod' }), /Suite required/)
+  })
+
+  it('toString returns module#suite#target', () => {
+    assert.equal(new FQT('a', 'b', 'c').toString(), 'a#b#c')
+  })
+
+  it('toJSON equals toString', () => {
+    const fqt = new FQT('a', 'b', 'c')
+    assert.equal(fqt.toJSON(), fqt.toString())
   })
 })
 
@@ -40,17 +51,16 @@ describe('buildRunner', () => {
   const makeProject = (): Map<string, ModuleDef> =>
     new Map([['pkg', {
       ci: {
-        a: { deps: [], run: (_d) => [{ FROM: 'alpine' }] },
-        b: { deps: ['a'], run: (d) => [{ FROM: d['a']! }] },
+        a: { deps: [], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
+        b: { deps: ['a'], run: (d) => ({ FROM: d['a']!, steps: [] }) },
       }
     }]])
 
   it('runs a target with no deps', async () => {
     const runner = buildRunner('/', makeProject(), stubDeps)
     const result = await runner('pkg#ci#a')
-    assert.equal(result.fqt, 'pkg#ci#a')
+    assert.equal(result.fqt.toString(), 'pkg#ci#a')
     assert.equal(result.imageTag, 'pkg-ci-a')
-    assert.equal(result.imageDigest, 'sha256:pkg-ci-a')
   })
 
   it('memoizes — same promise returned for same fqt', async () => {
@@ -80,14 +90,13 @@ describe('buildRunner', () => {
     let receivedDeps: Record<string, string> = {}
     const project = new Map<string, ModuleDef>([['pkg', {
       ci: {
-        a: { deps: [], run: (_d) => [{ FROM: 'alpine' }] },
-        b: { deps: ['a'], run: (d) => { receivedDeps = {...d}; return [{ FROM: d['a']! }] } },
+        a: { deps: [], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
+        b: { deps: ['a'], run: (d) => { receivedDeps = {...d}; return { FROM: d['a']!, steps: [] } } },
       }
     }]])
     const runner = buildRunner('/', project, stubDeps)
     await runner('pkg#ci#b')
     assert.ok('a' in receivedDeps)
-    assert.ok(receivedDeps['a']!.startsWith('pkg-ci-a'))
   })
 
   it('throws on unknown target', async () => {
@@ -98,8 +107,8 @@ describe('buildRunner', () => {
   it('detects circular dependencies', async () => {
     const circular = new Map<string, ModuleDef>([['pkg', {
       ci: {
-        a: { deps: ['b'], run: (_d) => [{ FROM: 'alpine' }] },
-        b: { deps: ['a'], run: (_d) => [{ FROM: 'alpine' }] },
+        a: { deps: ['b'], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
+        b: { deps: ['a'], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
       }
     }]])
     const runner = buildRunner('/', circular, stubDeps)

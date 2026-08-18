@@ -6,12 +6,6 @@ export const Copy = z
   .readonly();
 export interface Copy extends z.infer<typeof Copy> {}
 
-export const ExportEntry = z
-  .object({ src: z.string(), dest: z.string() })
-  .strict()
-  .readonly();
-export type ExportEntry = z.infer<typeof ExportEntry>;
-
 export const Step = z.union([
   z.object({ RUN: z.string() }).strict().readonly(),
   z.object({ COPY: Copy }).strict().readonly(),
@@ -20,14 +14,17 @@ export const Step = z.union([
   z.object({ ARG: z.string() }).strict().readonly(),
   z.object({ ENTRYPOINT: z.array(z.string()).readonly() }).strict().readonly(),
   z.object({ CMD: z.array(z.string()).readonly() }).strict().readonly(),
-  z.object({ EXPORT: ExportEntry }).strict().readonly(),
 ]);
 export type Step = z.infer<typeof Step>;
 
 export const Run = z
-  .tuple([z.object({ FROM: z.string() }).strict().readonly()])
-  .rest(Step);
-export type Run = z.infer<typeof Run>;
+  .object({
+    FROM: z.string(),
+    steps: z.array(Step).readonly().default([]),
+    EXPORT: z.record(z.string(), z.string()).readonly().optional(),
+  })
+  .readonly();
+export interface Run extends z.infer<typeof Run> {}
 
 export type RunFn = (deps: Readonly<Record<string, string>>) => Run;
 

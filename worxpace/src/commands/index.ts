@@ -5,7 +5,7 @@ import type { InferValue } from '@optique/core/parser'
 import { run } from '@optique/run'
 import { resolve } from 'node:path'
 import type { ModuleDef } from '../project/schema.js'
-import { parseFqt, fqtToString, type Runner } from '../runner/index.js'
+import { FQT, type Runner } from '../runner/index.js'
 import type { DockerImageExtractor } from '../wire.js'
 
 const parser = or(
@@ -37,30 +37,27 @@ export class ListCommandRunner implements CommandRunner {
     for (const [moduleName, suites] of this.projects) {
       for (const [suiteName, targets] of Object.entries(suites)) {
         for (const [targetName, target] of Object.entries(targets)) {
-          const fqt = `${moduleName}#${suiteName}#${targetName}`
+          const fqt = new FQT(moduleName, suiteName, targetName)
           const deps = target.deps.map(d =>
-            fqtToString(parseFqt(d, { module: moduleName, suite: suiteName }))
+            FQT.parse(d, { module: moduleName, suite: suiteName }).toString()
           )
-          graph.set(fqt, deps)
+          graph.set(fqt.toString(), deps)
         }
       }
     }
 
     const sorted: string[] = []
     const visited = new Set<string>()
-
-    const visit = (fqt: string): void => {
-      if (visited.has(fqt)) return
-      visited.add(fqt)
-      for (const dep of graph.get(fqt) ?? []) visit(dep)
-      sorted.push(fqt)
+    const visit = (key: string): void => {
+      if (visited.has(key)) return
+      visited.add(key)
+      for (const dep of graph.get(key) ?? []) visit(dep)
+      sorted.push(key)
     }
-
-    for (const fqt of graph.keys()) visit(fqt)
-
-    for (const fqt of sorted) {
-      const deps = graph.get(fqt) ?? []
-      console.log(`${fqt}[${deps.join(', ')}]`)
+    for (const key of graph.keys()) visit(key)
+    for (const key of sorted) {
+      const deps = graph.get(key) ?? []
+      console.log(`${key}[${deps.join(', ')}]`)
     }
   }
 }
@@ -76,16 +73,16 @@ export class RunCommandRunner implements CommandRunner {
   async execute(cmd: Cmd): Promise<void> {
     if (cmd.command !== 'run') return
 
-    const fqt = fqtToString(parseFqt(cmd.fqt, { module: this.currentModule, suite: 'ci' }))
-    const result = await this.runner(fqt)
+    const context = this.currentModule ? { module: this.currentModule } : undefined
+    const fqt = FQT.parse(cmd.fqt, context)
+    const result = await this.runner(fqt.toString())
 
     if (result.export) {
-      const moduleName = fqt.slice(0, fqt.indexOf('#'))
-      const moduleDir = resolve(this.root, moduleName)
+      const moduleDir = resolve(this.root, result.fqt.module)
       await this.extractor.extractFromImage(result.imageTag, result.export, moduleDir)
     }
 
-    console.log(`Done: ${fqt} (${result.imageTag})`)
+    console.log(`Done: ${result.fqt} (${result.imageTag})`)
   }
 }
 

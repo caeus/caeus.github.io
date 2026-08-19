@@ -4,7 +4,7 @@ Personal site + monorepo. Deployed to GitHub Pages from `docs/`.
 
 ## Build system
 
-This repo uses **worxpace** — a Docker-based task runner defined via `project.yml` files. Every package declares suites of targets; targets have dependencies, a Dockerfile-like `run` definition, and optional `exports` to materialize files back to the host.
+This repo uses **worxpace** — a Docker-based task runner defined via `package.wx` files. Every package declares facets of targets; targets have dependencies, a Dockerfile-like `run` definition, and an optional `EXPORT` map to materialize files back to the host. Full documentation lives in [`worxpace/docs/`](worxpace/docs/README.md).
 
 ### Install `wx`
 
@@ -20,7 +20,7 @@ This symlinks `wx` to `~/.local/bin/wx`. Make sure `~/.local/bin` is on your `PA
 
 ```sh
 wx list                        # list all available targets
-wx run <module>#<suite>#<target>   # run a specific target
+wx run <package>#<facet>#<target>   # run a specific target
 ```
 
 Examples:
@@ -36,12 +36,12 @@ wx run .#ci#deploy                 # build ui and deploy to docs/
 ### `project.yml` format
 
 ```yaml
-<suite>:
+<facet>:
   <target>:
     deps:
-      - <target>                     # same suite
-      - <suite>#<target>             # same module, different suite
-      - <module>#<suite>#<target>    # cross-module
+      - <target>                      # same facet
+      - <facet>#<target>              # same package, different facet
+      - <package>#<facet>#<target>    # cross-package
     run:
       FROM:
         image: node:22-alpine        # base image

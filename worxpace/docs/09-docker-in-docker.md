@@ -36,8 +36,8 @@ Applied to worxpace:
 | Operation | Path used | Why |
 | --- | --- | --- |
 | Reading `package.wx` files | `/repo` | Plain `fs` calls in the worxpace process. |
-| `docker buildx build <context>` | `/repo/<module>` | The CLI reads and uploads the context itself. |
-| `docker run -v <dir>:/host-out` for `EXPORT` | `$HOST_REPO_ROOT/<module>` | The **daemon** resolves the bind mount. |
+| `docker buildx build <context>` | `/repo/<package>` | The CLI reads and uploads the context itself. |
+| `docker run -v <dir>:/host-out` for `EXPORT` | `$HOST_REPO_ROOT/<package>` | The **daemon** resolves the bind mount. |
 
 That is exactly why `wire.ts` binds two keys and hands them to different consumers:
 
@@ -70,7 +70,7 @@ just for determinism.
 
 **Build contexts must live under the mounted repo.** Since only `$REPO_ROOT` is mounted at
 `/repo`, a target cannot reference anything outside the repository. Combined with the
-build context always being the module's own directory, a target can only ever see its own
+build context always being the package's own directory, a target can only ever see its own
 subtree.
 
 **Layer cache is shared with everything else on the host.** Your local Docker cache, your

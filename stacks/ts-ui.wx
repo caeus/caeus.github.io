@@ -90,7 +90,7 @@ export default defineConfig({
 
 const BASE = 'packages/base#ci#node-pnpm'
 
-export function ciSuite({ name, scope, outDir, deps = [] }) {
+export function ciFacet({ name, scope, outDir, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
   const packageJson = buildPackageJson({

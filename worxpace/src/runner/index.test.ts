@@ -3,32 +3,32 @@ import assert from 'node:assert/strict'
 import { FQT, buildRunner } from './index.js'
 import type { TargetRunnerDeps } from './index.js'
 import type { BuildResult } from './docker-builder.js'
-import type { ModuleDef } from '../project/schema.js'
+import type { PackageDef } from '../pkg/schema.js'
 
 describe('FQT.parse', () => {
-  it('parses fully qualified module#suite#target', () => {
+  it('parses fully qualified package#facet#target', () => {
     const fqt = FQT.parse('a#b#c')
-    assert.equal(fqt.module, 'a')
-    assert.equal(fqt.suite, 'b')
+    assert.equal(fqt.pkg, 'a')
+    assert.equal(fqt.facet, 'b')
     assert.equal(fqt.target, 'c')
   })
 
-  it('parses suite#target using context module', () => {
-    const fqt = FQT.parse('b#c', { module: 'mod' })
-    assert.equal(fqt.module, 'mod')
-    assert.equal(fqt.suite, 'b')
+  it('parses facet#target using context package', () => {
+    const fqt = FQT.parse('b#c', { pkg: 'mod' })
+    assert.equal(fqt.pkg, 'mod')
+    assert.equal(fqt.facet, 'b')
     assert.equal(fqt.target, 'c')
   })
 
-  it('throws without module context for suite#target', () => {
-    assert.throws(() => FQT.parse('b#c'), /Module required/)
+  it('throws without package context for facet#target', () => {
+    assert.throws(() => FQT.parse('b#c'), /Package required/)
   })
 
-  it('throws without suite context for bare target', () => {
-    assert.throws(() => FQT.parse('c', { module: 'mod' }), /Suite required/)
+  it('throws without facet context for bare target', () => {
+    assert.throws(() => FQT.parse('c', { pkg: 'mod' }), /Facet required/)
   })
 
-  it('toString returns module#suite#target', () => {
+  it('toString returns package#facet#target', () => {
     assert.equal(new FQT('a', 'b', 'c').toString(), 'a#b#c')
   })
 
@@ -47,7 +47,7 @@ describe('buildRunner', () => {
     buildDockerImage: stubBuild,
   }
 
-  const makeProject = (): Map<string, ModuleDef> =>
+  const makePackage = (): Map<string, PackageDef> =>
     new Map([['pkg', {
       ci: {
         a: { deps: [], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
@@ -56,7 +56,7 @@ describe('buildRunner', () => {
     }]])
 
   it('runs a target with no deps', async () => {
-    const runner = buildRunner('/', makeProject(), stubDeps)
+    const runner = buildRunner('/', makePackage(), stubDeps)
     const result = await runner(FQT.parse('pkg#ci#a'))
     assert.equal(result.fqt.toString(), 'pkg#ci#a')
     assert.equal(result.imageTag, 'pkg-ci-a')
@@ -68,7 +68,7 @@ describe('buildRunner', () => {
       ...stubDeps,
       buildDockerImage: async (_c, tag) => { calls++; return { tag, digest: `sha256:${tag}` } },
     }
-    const runner = buildRunner('/', makeProject(), countingDeps)
+    const runner = buildRunner('/', makePackage(), countingDeps)
     await Promise.all([runner(FQT.parse('pkg#ci#a')), runner(FQT.parse('pkg#ci#a'))])
     assert.equal(calls, 1)
   })
@@ -79,7 +79,7 @@ describe('buildRunner', () => {
       ...stubDeps,
       buildDockerImage: async (_c, tag) => { order.push(tag); return { tag, digest: `sha256:${tag}` } },
     }
-    const runner = buildRunner('/', makeProject(), orderDeps)
+    const runner = buildRunner('/', makePackage(), orderDeps)
     await runner(FQT.parse('pkg#ci#b'))
     assert.equal(order[0], 'pkg-ci-a')
     assert.equal(order[1], 'pkg-ci-b')
@@ -87,24 +87,24 @@ describe('buildRunner', () => {
 
   it('passes dep image tags to run function', async () => {
     let receivedDeps: Record<string, string> = {}
-    const project = new Map<string, ModuleDef>([['pkg', {
+    const packages = new Map<string, PackageDef>([['pkg', {
       ci: {
         a: { deps: [], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
         b: { deps: ['a'], run: (d) => { receivedDeps = {...d}; return { FROM: d['a']!, steps: [] } } },
       }
     }]])
-    const runner = buildRunner('/', project, stubDeps)
+    const runner = buildRunner('/', packages, stubDeps)
     await runner(FQT.parse('pkg#ci#b'))
     assert.ok('a' in receivedDeps)
   })
 
   it('throws on unknown target', async () => {
-    const runner = buildRunner('/', makeProject(), stubDeps)
+    const runner = buildRunner('/', makePackage(), stubDeps)
     await assert.rejects(() => Promise.resolve().then(() => runner(FQT.parse('pkg#ci#missing'))), /Unknown target/)
   })
 
   it('detects circular dependencies', async () => {
-    const circular = new Map<string, ModuleDef>([['pkg', {
+    const circular = new Map<string, PackageDef>([['pkg', {
       ci: {
         a: { deps: ['b'], run: (_d) => ({ FROM: 'alpine', steps: [] }) },
         b: { deps: ['a'], run: (_d) => ({ FROM: 'alpine', steps: [] }) },

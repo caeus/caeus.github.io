@@ -26,7 +26,7 @@ const PRETTIERRC = {
   trailingComma: 'none',
 }
 
-export function ciSuite({ name, scope, deps = [] }) {
+export function ciFacet({ name, scope, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
   const packageJson = buildPackageJson({

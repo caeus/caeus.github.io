@@ -1,17 +1,17 @@
 # Troubleshooting
 
-## My module doesn't show up in `wx list`
+## My package doesn't show up in `wx list`
 
 This is the failure mode you will hit most, and it is quiet by design-accident rather than by
-design. `loadProject` runs the module's default export through `ModuleDef.safeParse` and, on
-failure, **returns `null` and skips the module with no diagnostic**. `wx list` then simply
+design. `loadPackage` runs the package's default export through `PackageDef.safeParse` and, on
+failure, **returns `null` and skips the package with no diagnostic**. `wx list` then simply
 omits it, and `wx run` reports `Unknown target`.
 
 Causes, roughly in order of likelihood:
 
 - **A misspelled or unknown key in a `Step`.** Every step variant is `.strict()`, so
   `{ RUNN: '...' }`, `{ WORKIDR: '...' }`, or `{ COPY: { src, dst } }` (should be `dest`)
-  fails validation. One bad step invalidates the entire module.
+  fails validation. One bad step invalidates the entire package.
 - **`run` is not a function.** `run: { FROM: ..., steps: [] }` — a common slip — fails the
   `z.custom<RunFn>` check.
 - **A helper returned `undefined`.** If a factory in `stacks/` forgets a `return`, or a
@@ -21,10 +21,10 @@ Causes, roughly in order of likelihood:
 - **The default export is missing entirely** — e.g. `export const ci = {...}` instead of
   `export default { ci: {...} }`.
 
-Note that `ModuleDef` is a `Record<string, Suite>` with no known keys, so the error is never
-about suite names — those can be anything.
+Note that `PackageDef` is a `Record<string, FacetDef>` with no known keys, so the error is never
+about facet names — those can be anything.
 
-**How to find it:** bisect. Comment out targets until the module reappears in `wx list`, then
+**How to find it:** bisect. Comment out targets until the package reappears in `wx list`, then
 narrow to the step. If you want a real error message, temporarily change `loader.ts` to throw
 instead of returning `null`:
 
@@ -35,36 +35,34 @@ return deepFreeze(result.data)
 
 Zod's error is precise about which key in which step failed.
 
-## `Only wx:/ imports are allowed in build.wx, got: <specifier>`
+## `Only wx:/ imports are allowed in package.wx, got: <specifier>`
 
 You used a bare, relative, or absolute import. Every import in a `.wx` file must start with
 `wx:/` and be root-relative — including imports between two `.wx` files in the same directory.
 `import { x } from './sibling.wx'` must be `import { x } from 'wx:/stacks/sibling'`.
 
-The message says `build.wx` because it predates the rename to `package.wx`. Same thing.
-
 ## `Unknown target: <fqt>`
 
-Either the module failed to load (see above), or the FQT doesn't resolve to what you think.
+Either the package failed to load (see above), or the FQT doesn't resolve to what you think.
 Run `wx list` and compare — it prints deps fully expanded, which is usually enough to spot the
 mismatch. Common cases:
 
-- You omitted the module segment but were not standing in that module's directory.
-- You are at the repo root, where no module is inferred at all — fully qualify the FQT, and
-  remember the root module is named `.` (`wx run .#ci#deploy`).
-- The suite is not `ci` (nothing forces it to be).
+- You omitted the package segment but were not standing in that package's directory.
+- You are at the repo root, where no package is inferred at all — fully qualify the FQT, and
+  remember the root package is named `.` (`wx run .#ci#deploy`).
+- The facet is not `ci` (nothing forces it to be).
 
-## `Suite required when only target is provided: <name>`
+## `Facet required when only target is provided: <name>`
 
-You passed a bare target name on the command line. Only the module is inferred from your
-working directory; the suite never is.
+You passed a bare target name on the command line. Only the package is inferred from your
+working directory; the facet never is.
 
 ```sh
 wx run build       # ✗
 wx run ci#build    # ✓
 ```
 
-Inside a `deps` array, however, a bare name *does* work — there the current suite is known.
+Inside a `deps` array, however, a bare name *does* work — there the current facet is known.
 
 ## `Circular dependency: a -> b -> a`
 

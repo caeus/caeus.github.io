@@ -28,16 +28,16 @@ export interface Run extends z.infer<typeof Run> {}
 
 export type RunFn = (deps: Readonly<Record<string, string>>) => Run;
 
-export const Target = z
+export const TargetDef = z
   .object({
     deps: z.array(z.string()).readonly().default([]),
     run: z.custom<RunFn>((v) => typeof v === "function"),
   })
   .readonly();
-export interface Target extends z.infer<typeof Target> {}
+export interface TargetDef extends z.infer<typeof TargetDef> {}
 
-export const Suite = z.record(z.string(), Target).readonly();
-export interface Suite extends z.infer<typeof Suite> {}
+export const FacetDef = z.record(z.string(), TargetDef).readonly();
+export interface FacetDef extends z.infer<typeof FacetDef> {}
 
-export const ModuleDef = z.record(z.string(), Suite).readonly();
-export interface ModuleDef extends z.infer<typeof ModuleDef> {}
+export const PackageDef = z.record(z.string(), FacetDef).readonly();
+export interface PackageDef extends z.infer<typeof PackageDef> {}

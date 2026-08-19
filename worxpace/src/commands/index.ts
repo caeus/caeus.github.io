@@ -4,7 +4,7 @@ import { string } from "@optique/core/valueparser";
 import type { InferValue } from "@optique/core/parser";
 import { run } from "@optique/run";
 import { resolve } from "node:path";
-import type { ModuleDef } from "../project/schema.js";
+import type { PackageDef } from "../pkg/schema.js";
 import { FQT, type Runner } from "../runner/index.js";
 import type { DockerImageExtractor } from "../wire.js";
 const runCommand = command('run', object({ command: constant('run'), fqt: argument(string()) }))
@@ -23,17 +23,17 @@ export interface CommandRunner {
 }
 
 export class ListCommandRunner implements CommandRunner {
-  constructor(private readonly projects: ReadonlyMap<string, ModuleDef>) {}
+  constructor(private readonly packages: ReadonlyMap<string, PackageDef>) {}
 
   async execute(): Promise<void> {
     const graph = new Map<string, readonly string[]>();
 
-    for (const [moduleName, suites] of this.projects) {
-      for (const [suiteName, targets] of Object.entries(suites)) {
+    for (const [packageName, facets] of this.packages) {
+      for (const [facetName, targets] of Object.entries(facets)) {
         for (const [targetName, target] of Object.entries(targets)) {
-          const fqt = new FQT(moduleName, suiteName, targetName);
+          const fqt = new FQT(packageName, facetName, targetName);
           const deps = target.deps.map((d) =>
-            FQT.parse(d, { module: moduleName, suite: suiteName }).toString(),
+            FQT.parse(d, { pkg: packageName, facet: facetName }).toString(),
           );
           graph.set(fqt.toString(), deps);
         }
@@ -61,22 +61,22 @@ export class RunCommandRunner {
     private readonly runner: Runner,
     private readonly extractor: DockerImageExtractor,
     private readonly root: string,
-    private readonly currentModule: string,
+    private readonly currentPackage: string,
   ) {}
 
   async execute(cmd: RunCmd): Promise<void> {
-    const context = this.currentModule
-      ? { module: this.currentModule }
+    const context = this.currentPackage
+      ? { pkg: this.currentPackage }
       : undefined;
     const fqt = FQT.parse(cmd.fqt, context);
     const result = await this.runner(fqt);
 
     if (result.export) {
-      const moduleDir = resolve(this.root, result.fqt.module);
+      const packageDir = resolve(this.root, result.fqt.pkg);
       await this.extractor.extractFromImage(
         result.imageTag,
         result.export,
-        moduleDir,
+        packageDir,
       );
     }
 

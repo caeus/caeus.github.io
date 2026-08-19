@@ -27,7 +27,7 @@ export PATH="$HOME/.local/bin:$PATH"
 **3. Create `packages/`.** The loader reads this directory unconditionally, so a repo without it
 fails with `ENOENT`. Even if empty at first, it must exist.
 
-**4. Add a base-image module.** Almost every target wants the same starting image; make it a
+**4. Add a base-image package.** Almost every target wants the same starting image; make it a
 target so it is built once and shared:
 
 ```js
@@ -63,12 +63,12 @@ Then:
 wx run packages/base#ci#node-pnpm
 ```
 
-If that produces an image, worxpace is working: the loader found your module, the sandbox
+If that produces an image, worxpace is working: the loader found your package, the sandbox
 evaluated it, the renderer produced a Dockerfile, and the socket mount reached your daemon.
 
-**6. Add a real module.** Start with one package and one target, get it green, then add the
+**6. Add a real package.** Start with one package and one target, get it green, then add the
 next target to the same package. Resist writing a `stacks/` abstraction until you have two
-packages that actually want the same suite — the third similar target is when the factory pays
+packages that actually want the same facet — the third similar target is when the factory pays
 for itself.
 
 **7. Extract shared logic into `lib/` and `stacks/`** once the duplication is real. See
@@ -91,7 +91,7 @@ dependency install.
 
 ## Things to decide up front
 
-- **Suite naming.** One `ci` suite is enough for most repos. Split only when you have targets
+- **Facet naming.** One `ci` facet is enough for most repos. Split only when you have targets
   with genuinely different lifecycles (`ci` vs `release`).
 - **Where generated config lives.** worxpace's model favours generating `package.json`,
   `tsconfig.json`, and lockfile-adjacent files *inside* the image from `.wx` literals, rather
@@ -124,10 +124,10 @@ are each one small edit away from being different. The most likely ones:
 
 | Want | Change |
 | --- | --- |
-| A different build-file name | `PACKAGE_FILE` in `src/project/loader.ts` |
-| Scan `apps/` as well as `packages/` | the `walk` calls in `loadModules` |
+| A different build-file name | `PACKAGE_FILE` in `src/pkg/loader.ts` |
+| Scan `apps/` as well as `packages/` | the `walk` calls in `loadPackages` |
 | Extra `.dockerignore` entries | `DEFAULT_DOCKERIGNORE` in `src/runner/docker-builder.ts` |
-| A new step kind | the `Step` union in `src/project/schema.ts` **and** the switch in `src/runner/dockerfile-renderer.ts` |
+| A new step kind | the `Step` union in `src/pkg/schema.ts` **and** the switch in `src/runner/dockerfile-renderer.ts` |
 | A new command | a parser in `src/commands/index.ts`, a runner class, one branch in `CompositeCommandRunner` |
 
 Run `pnpm typecheck && pnpm test` in `worxpace/` after any of these. The renderer and runner

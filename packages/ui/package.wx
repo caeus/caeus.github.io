@@ -1,7 +1,7 @@
-import { ciSuite } from 'wx:/stacks/ts-ui'
+import { ciFacet } from 'wx:/stacks/ts-ui'
 
 export default {
-  ci: ciSuite({
+  ci: ciFacet({
     name: 'ui',
     scope: 'caeus',
     outDir: '../../docs',

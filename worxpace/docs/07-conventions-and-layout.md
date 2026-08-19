@@ -5,26 +5,26 @@ which is which saves time.
 
 ## Hardwired (you cannot change without editing worxpace)
 
-- **The build file is named `package.wx`.** `PACKAGE_FILE` in `src/project/loader.ts`.
+- **The build file is named `package.wx`.** `PACKAGE_FILE` in `src/pkg/loader.ts`.
 - **Only two places are scanned**: the repository root, and everything under `packages/`.
-  A module at `apps/web/package.wx` is invisible.
+  A package at `apps/web/package.wx` is invisible.
 - **`packages/` must exist.** The loader unconditionally reads it; a repo without that
   directory fails with `ENOENT`.
-- **The root `package.wx` gets the module name `.`** — so its FQTs look like `.#ci#deploy`.
+- **The root `package.wx` gets the package name `.`** — so its FQTs look like `.#ci#deploy`.
 - **Discovery stops at the first `package.wx`.** The walker descends `packages/` recursively,
-  but as soon as a directory contains a `package.wx` it records that module and does **not**
-  look inside it. Nested modules (`packages/group/sub/package.wx` where
+  but as soon as a directory contains a `package.wx` it records that package and does **not**
+  look inside it. Nested packages (`packages/group/sub/package.wx` where
   `packages/group/package.wx` also exists) are unreachable. To group packages, leave the
   intermediate directory without a build file — `packages/group/a/package.wx` and
   `packages/group/b/package.wx` both work and are named by their full relative path.
 - **`node_modules` and `.git` are excluded from every build context**, via a baked
   `.dockerignore`. There is no way to add entries per target.
-- **The build context is the module's own directory** — always, with no option to widen or
+- **The build context is the package's own directory** — always, with no option to widen or
   narrow it.
 
 ## Conventions (yours to change)
 
-- **Suite named `ci`.** worxpace attaches no meaning to it. Nothing breaks if you use
+- **Facet named `ci`.** worxpace attaches no meaning to it. Nothing breaks if you use
   `build`, `release`, or `default`.
 - **Target names `install` / `build` / `pack` / `typecheck`.** Also arbitrary. The chain
   `install → build → pack` is a useful shape, not a requirement.
@@ -35,7 +35,7 @@ which is which saves time.
 
 ```
 <repo root>/
-├── package.wx              # root module '.', for repo-wide targets (deploy, docs)
+├── package.wx              # root package '.', for repo-wide targets (deploy, docs)
 ├── worxpace/               # vendored worxpace; the wx launcher finds the repo by this
 │   ├── cli.sh
 │   ├── wx
@@ -46,7 +46,7 @@ which is which saves time.
 ├── lib/                    # low-level .wx helpers (file writing, version pins)
 │   ├── versions.wx
 │   └── file_utils.wx
-├── stacks/                 # .wx suite factories, one per project archetype
+├── stacks/                 # .wx facet factories, one per project archetype
 │   ├── ts-lib.wx
 │   ├── ts-ui.wx
 │   └── ts-executable.wx
@@ -60,7 +60,7 @@ which is which saves time.
 
 Writing out `install`/`build`/`typecheck` by hand in every package gets old fast, and it lets
 packages drift. The fix is to put the logic in a shared `.wx` module that returns a whole
-suite.
+facet.
 
 **`lib/`** holds primitives — no knowledge of your project archetypes:
 
@@ -85,7 +85,7 @@ export function writeJson(path, value) {
 }
 ```
 
-**`stacks/`** holds one factory per archetype. Each exports a function returning a suite:
+**`stacks/`** holds one factory per archetype. Each exports a function returning a facet:
 
 ```js
 // stacks/ts-lib.wx
@@ -94,7 +94,7 @@ import { writeJson } from 'wx:/lib/file_utils'
 
 const BASE = 'packages/base#ci#node-pnpm'
 
-export function ciSuite({ name, scope, deps = [] }) {
+export function ciFacet({ name, scope, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
 
@@ -114,10 +114,10 @@ Each package then declares only what makes it different:
 
 ```js
 // packages/common/package.wx
-import { ciSuite } from 'wx:/stacks/ts-lib'
+import { ciFacet } from 'wx:/stacks/ts-lib'
 
 export default {
-  ci: ciSuite({
+  ci: ciFacet({
     name: 'common',
     scope: 'myorg',
     deps: [{ remote: 'zod' }, { remote: '@orpc/contract' }],
@@ -126,7 +126,7 @@ export default {
 ```
 
 A useful convention inside these factories is tagging deps by kind — `{ remote: 'zod' }` for a
-registry package versus `{ local: 'common' }` for a sibling module — so the factory can turn
+registry package versus `{ local: 'common' }` for a sibling package — so the factory can turn
 locals into `pack` target deps and remotes into `package.json` entries. That distinction is
 yours to define; worxpace only ever sees the resulting `deps` strings.
 

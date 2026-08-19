@@ -1,13 +1,13 @@
 import vm from 'node:vm'
 import { readdir, readFile } from 'node:fs/promises'
 import { resolve, relative, extname } from 'node:path'
-import { ModuleDef } from './schema.js'
+import { PackageDef } from './schema.js'
 
 const WX_PREFIX = 'wx:/'
 const PACKAGE_FILE = 'package.wx'
 
-export interface ModuleLoader {
-  loadModules(root: string): Promise<ReadonlyMap<string, ModuleDef>>
+export interface PackageLoader {
+  loadPackages(root: string): Promise<ReadonlyMap<string, PackageDef>>
 }
 
 interface LoadContext {
@@ -25,7 +25,7 @@ function deepFreeze<T>(value: T): T {
 
 async function link(specifier: string, ctx: LoadContext): Promise<vm.SourceTextModule> {
   if (!specifier.startsWith(WX_PREFIX))
-    throw new Error(`Only wx:/ imports are allowed in build.wx, got: ${specifier}`)
+    throw new Error(`Only wx:/ imports are allowed in package.wx, got: ${specifier}`)
   const rel = specifier.slice(WX_PREFIX.length)
   const base = resolve(ctx.root, rel)
   const path = extname(base) ? base : `${base}.wx`
@@ -38,37 +38,37 @@ async function link(specifier: string, ctx: LoadContext): Promise<vm.SourceTextM
   return mod
 }
 
-async function loadProject(filePath: string, ctx: LoadContext): Promise<ModuleDef | null> {
+async function loadPackage(filePath: string, ctx: LoadContext): Promise<PackageDef | null> {
   const code = await readFile(filePath, 'utf-8')
   const mod = new vm.SourceTextModule(code, { context: ctx.context, identifier: filePath })
   await mod.link((s) => link(s, ctx))
   await mod.evaluate()
   const defaultExport = (mod.namespace as Record<string, unknown>)['default']
-  const result = ModuleDef.safeParse(defaultExport)
+  const result = PackageDef.safeParse(defaultExport)
   return result.success ? deepFreeze(result.data) : null
 }
 
-export async function loadModules(root: string): Promise<ReadonlyMap<string, ModuleDef>> {
+export async function loadPackages(root: string): Promise<ReadonlyMap<string, PackageDef>> {
   const ctx: LoadContext = {
     root,
     context: vm.createContext(Object.assign(Object.create(null), { Buffer })),
     cache: new Map(),
   }
-  const result = new Map<string, ModuleDef>()
+  const result = new Map<string, PackageDef>()
   const rootEntries = await readdir(root, { withFileTypes: true })
   if (rootEntries.some(e => !e.isDirectory() && e.name === PACKAGE_FILE)) {
-    const project = await loadProject(resolve(root, PACKAGE_FILE), ctx)
-    if (project) result.set('.', project)
+    const pkg = await loadPackage(resolve(root, PACKAGE_FILE), ctx)
+    if (pkg) result.set('.', pkg)
   }
   await walk(resolve(root, 'packages'), ctx, result)
   return Object.freeze(result)
 }
 
-async function walk(dir: string, ctx: LoadContext, acc: Map<string, ModuleDef>): Promise<void> {
+async function walk(dir: string, ctx: LoadContext, acc: Map<string, PackageDef>): Promise<void> {
   const entries = await readdir(dir, { withFileTypes: true })
   if (entries.some(e => !e.isDirectory() && e.name === PACKAGE_FILE)) {
-    const project = await loadProject(resolve(dir, PACKAGE_FILE), ctx)
-    if (project) acc.set(relative(ctx.root, dir), project)
+    const pkg = await loadPackage(resolve(dir, PACKAGE_FILE), ctx)
+    if (pkg) acc.set(relative(ctx.root, dir), pkg)
     return
   }
   await Promise.all(

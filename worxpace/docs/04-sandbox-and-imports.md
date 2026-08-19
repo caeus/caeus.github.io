@@ -25,7 +25,7 @@ vm.createContext(Object.assign(Object.create(null), { Buffer }))
 **Not available:**
 
 - `console` — you cannot `console.log` to debug a build file. Use `wx list` to check that a
-  module parsed, and if you need to inspect a computed value, arrange for it to end up in a
+  package parsed, and if you need to inspect a computed value, arrange for it to end up in a
   `RUN` step and read it out of the Docker build output.
 - `process`, `process.env` — no environment access. Configuration must be literals in `.wx`
   files.
@@ -42,17 +42,15 @@ throw, but it cannot read your SSH keys or phone home.
 Only one import specifier form is allowed. Anything else throws:
 
 ```
-Only wx:/ imports are allowed in build.wx, got: <specifier>
+Only wx:/ imports are allowed in package.wx, got: <specifier>
 ```
-
-(The message still says `build.wx`; the file is now `package.wx`.)
 
 The rules:
 
 - **Specifiers must start with `wx:/`.** No bare specifiers (`'zod'`), no relative paths
   (`'./utils.js'`), no absolute paths, no URLs.
 - **The path after `wx:/` is resolved from the repository root**, never from the importing
-  file. `wx:/lib/versions` means `<repo root>/lib/versions` regardless of which module imports
+  file. `wx:/lib/versions` means `<repo root>/lib/versions` regardless of which package imports
   it. There is no such thing as a relative `.wx` import.
 - **The `.wx` extension is appended when the path has no extension.** `wx:/lib/versions`
   loads `lib/versions.wx`. `wx:/lib/data.json` would try to load `lib/data.json` verbatim and
@@ -61,11 +59,11 @@ The rules:
 ```js
 import versions from 'wx:/lib/versions'                  // default export
 import { writeJson, writeText } from 'wx:/lib/file_utils' // named exports
-import { ciSuite } from 'wx:/stacks/ts-lib'
+import { ciFacet } from 'wx:/stacks/ts-lib'
 ```
 
 Imported `.wx` files are ordinary modules — they can import other `wx:/` modules, and they can
-export anything: constants, helper functions, or whole suite factories.
+export anything: constants, helper functions, or whole facet factories.
 
 ## Caching and sharing
 
@@ -80,24 +78,24 @@ keyed by resolved path**. Consequences worth knowing:
 
 ## Immutability
 
-Everything the loader returns is deep-frozen: each parsed `ModuleDef`, recursively, plus the
+Everything the loader returns is deep-frozen: each parsed `PackageDef`, recursively, plus the
 outer `Map`. Attempting to mutate a target definition from anywhere in worxpace throws in
 strict mode. This is a guard against the runner accidentally rewriting the graph mid-walk.
 
 Note that freezing applies to the *parsed definition*, not to whatever your `run` function
 constructs at build time — that object is freshly created on each call.
 
-## Shared helper modules
+## shared helper modules
 
 Because `wx:/` paths are root-relative and build files are real JavaScript, the natural way to
-avoid repetition is a directory of helpers that export suite factories:
+avoid repetition is a directory of helpers that export facet factories:
 
 ```js
 // packages/common/package.wx
-import { ciSuite } from 'wx:/stacks/ts-lib'
+import { ciFacet } from 'wx:/stacks/ts-lib'
 
 export default {
-  ci: ciSuite({
+  ci: ciFacet({
     name: 'common',
     scope: 'myorg',
     deps: [{ remote: 'zod' }],
@@ -105,6 +103,6 @@ export default {
 }
 ```
 
-`ciSuite` returns the whole `{ install, build, pack, typecheck }` record. Each package's
+`ciFacet` returns the whole `{ install, build, pack, typecheck }` record. Each package's
 `package.wx` becomes a few lines of declaration, and the actual build logic lives in one place.
 See [07 — Conventions and layout](07-conventions-and-layout.md#the-libstacks-pattern).

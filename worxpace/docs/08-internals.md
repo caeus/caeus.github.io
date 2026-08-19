@@ -12,7 +12,7 @@ src/
 ├── di-container.ts             the container (no external DI dependency)
 ├── commands/index.ts           arg parsing + one runner class per command
 ├── project/
-│   ├── schema.ts               Zod schemas for ModuleDef/Suite/Target/Run/Step
+│   ├── schema.ts               Zod schemas for PackageDef/FacetDef/TargetDef/Run/Step
 │   └── loader.ts               filesystem walk + vm sandbox evaluation
 └── runner/
     ├── index.ts                FQT, TaskResult, buildRunner (graph walk + memo)
@@ -32,27 +32,27 @@ argv ──► parseCmd ──► Cmd
   RunCommandRunner            ListCommandRunner
          │                            │
    FQT.parse(cmd.fqt,           topological sort of
-     {module: currentModule})    the loaded graph → stdout
+     {pkg: currentPackage})     the loaded graph → stdout
          │
          ▼
-  buildRunner(root, modules, deps)   ── memo: Map<string, Promise<TaskResult>>
+  buildRunner(root, packages, deps)   ── memo: Map<string, Promise<TaskResult>>
          │
          │  for each dep, recursively (Promise.all), with a cycle trace
          ▼
   runTarget(fqt, target, depResults, root, deps)
          │
          ├─ tag       = fqt.toString() with # → -, / → _, leading non-alnum stripped
-         ├─ moduleDir = join(root, fqt.module)
+         ├─ packageDir = join(root, fqt.pkg)
          ├─ depsMap   = { <raw dep string>: <dep image tag> }
          ├─ runDef    = target.run(depsMap)
          ├─ content   = renderDockerfile(runDef)
-         └─ build     = buildDockerImage(content, tag, moduleDir)
+         └─ build     = buildDockerImage(content, tag, packageDir)
          │
          ▼
   TaskResult { fqt, imageTag, imageDigest, export? }
          │
          ▼
-  RunCommandRunner: if result.export, extractFromImage(imageTag, export, join(hostRoot, module))
+  RunCommandRunner: if result.export, extractFromImage(imageTag, export, join(hostRoot, pkg))
 ```
 
 Note the split of responsibility at the last step: `runTarget` returns the `EXPORT` map but
@@ -62,7 +62,7 @@ exports" fall out of the structure rather than needing a flag.
 
 ## Loading
 
-`loadModules(root)` creates one `LoadContext` — `{ root, context, cache }` — for the whole
+`loadPackages(root)` creates one `LoadContext` — `{ root, context, cache }` — for the whole
 session:
 
 - `context` is a single `vm.createContext(Object.assign(Object.create(null), { Buffer }))`.
@@ -71,18 +71,18 @@ session:
 
 Then:
 
-1. `readdir(root)`. If a non-directory entry named `package.wx` exists, load it as module `.`.
+1. `readdir(root)`. If a non-directory entry named `package.wx` exists, load it as package `.`.
 2. `walk(root/packages)`. For each directory: if it contains a `package.wx`, load it under
    `relative(root, dir)` and **return without descending**. Otherwise recurse into all
    subdirectories in parallel.
 3. Each file becomes a `vm.SourceTextModule`, is linked (resolving `wx:/` specifiers via the
-   shared cache), evaluated, and its `default` export run through `ModuleDef.safeParse`.
+   shared cache), evaluated, and its `default` export run through `PackageDef.safeParse`.
 4. On success the parsed value is deep-frozen and stored. **On failure `null` is returned and
-   the module is skipped with no diagnostic.**
+   the package is skipped with no diagnostic.**
 5. The resulting `Map` is `Object.freeze`d and returned as a `ReadonlyMap`.
 
 That silent skip in step 4 is the single biggest ergonomic wart in worxpace. See
-[11 — Troubleshooting](11-troubleshooting.md#my-module-doesnt-show-up-in-wx-list).
+[11 — Troubleshooting](11-troubleshooting.md#my-package-doesnt-show-up-in-wx-list).
 
 ## `FQT`
 
@@ -90,17 +90,21 @@ A value class, not a string alias, so it is parsed once and passed around struct
 
 ```ts
 class FQT {
-  constructor(readonly module: string, readonly suite: string, readonly target: string) {}
-  toString(): string          // `${module}#${suite}#${target}`
+  constructor(readonly pkg: string, readonly facet: string, readonly target: string) {}
+  toString(): string          // `${pkg}#${facet}#${target}`
   toJSON(): string            // === toString(), so it serializes as a plain string
-  static parse(raw: string, context?: { module: string; suite?: string }): FQT
+  static parse(raw: string, context?: { pkg: string; facet?: string }): FQT
 }
 ```
 
 `parse` splits on `#` and fills missing leading segments from `context`, throwing
-`Module required...` or `Suite required...` when context is insufficient. `Runner` is
+`Package required...` or `Facet required...` when context is insufficient. `Runner` is
 `(fqt: FQT) => Promise<TaskResult>` — it takes the parsed object, never a string, so no layer
 re-parses what an earlier layer already parsed.
+
+The field is `pkg`, not `package`, because `package` is a future-reserved word in strict mode
+and ESM is always strict. It would be legal as a property but not as the constructor parameter
+that a TS parameter property implies, so the abbreviation is uniform rather than half-applied.
 
 ## Graph walk and memoization
 
@@ -129,7 +133,7 @@ const tag = fqt.toString()
 | `packages/base#ci#node-pnpm` | `packages_base-ci-node-pnpm` |
 | `.#ci#deploy` | `ci-deploy` |
 
-The leading-character strip exists for the root module: `.#ci#deploy` would otherwise become
+The leading-character strip exists for the root package: `.#ci#deploy` would otherwise become
 `.-ci-deploy`, and Docker rejects a tag starting with `.`.
 
 Tags are **stable and unversioned**. Rebuilding a target overwrites the tag, and the previous
@@ -196,15 +200,15 @@ The bindings in `wire.ts`:
 | --- | --- |
 | `root` | `REPO_ROOT`, or worxpace's parent directory |
 | `hostRoot` | `HOST_REPO_ROOT`, falling back to `root` |
-| `currentModule` | `relative(hostRoot, WORKING_DIR ?? hostRoot)` |
-| `moduleLoader` | `{ loadModules }` |
-| `modules` | `moduleLoader.loadModules(root)` |
+| `currentPackage` | `relative(hostRoot, WORKING_DIR ?? hostRoot)` |
+| `packageLoader` | `{ loadPackages }` |
+| `packages` | `packageLoader.loadPackages(root)` |
 | `dockerfileRenderer` | `{ renderDockerfile }` |
 | `dockerImageBuilder` | `{ buildDockerImage }` |
 | `dockerImageExtractor` | `{ extractFromImage }` |
-| `runner` | `buildRunner(root, modules, { renderDockerfile, buildDockerImage })` |
-| `listCommandRunner` | `ListCommandRunner(modules)` |
-| `runCommandRunner` | `RunCommandRunner(runner, extractor, hostRoot, currentModule)` |
+| `runner` | `buildRunner(root, packages, { renderDockerfile, buildDockerImage })` |
+| `listCommandRunner` | `ListCommandRunner(packages)` |
+| `runCommandRunner` | `RunCommandRunner(runner, extractor, hostRoot, currentPackage)` |
 | `commandRunner` | `CompositeCommandRunner(runCommandRunner, listCommandRunner)` |
 
 Note `runner` gets `root` (container-side, for build contexts) while `runCommandRunner` gets

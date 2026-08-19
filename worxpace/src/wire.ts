@@ -1,7 +1,7 @@
 import { resolve, relative } from 'node:path'
 import { AsyncDisposeStack, createKey, createModule, Module } from './di-container.js'
-import { loadModules, type ModuleLoader } from './project/loader.js'
-import type { Run, ModuleDef } from './project/schema.js'
+import { loadPackages, type PackageLoader } from './pkg/loader.js'
+import type { Run, PackageDef } from './pkg/schema.js'
 import { buildRunner, type Runner } from './runner/index.js'
 import type { BuildResult } from './runner/docker-builder.js'
 import { renderDockerfile } from './runner/dockerfile-renderer.js'
@@ -23,9 +23,9 @@ export interface DockerImageExtractor {
 
 const rootKey = createKey<string>('root')
 const hostRootKey = createKey<string>('hostRoot')
-const currentModuleKey = createKey<string>('currentModule')
-const moduleLoaderKey = createKey<ModuleLoader>('projectFinder')
-const modulesKey = createKey<ReadonlyMap<string, ModuleDef>>('projects')
+const currentPackageKey = createKey<string>('currentPackage')
+const packageLoaderKey = createKey<PackageLoader>('packageLoader')
+const packagesKey = createKey<ReadonlyMap<string, PackageDef>>('packages')
 const dockerfileRendererKey = createKey<DockerfileRenderer>('dockerfileRenderer')
 const dockerImageBuilderKey = createKey<DockerImageBuilder>('dockerImageBuilder')
 const dockerImageExtractorKey = createKey<DockerImageExtractor>('dockerImageExtractor')
@@ -40,21 +40,21 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
   return createModule()
     .bind(rootKey).toValue(env['REPO_ROOT'] ?? resolve(new URL('../../', import.meta.url).pathname))
     .bind(hostRootKey).toFun([rootKey], root => env['HOST_REPO_ROOT'] ?? root)
-    .bind(currentModuleKey).toFun([hostRootKey], hostRoot => relative(hostRoot, env['WORKING_DIR'] ?? hostRoot))
-    .bind(moduleLoaderKey).toValue({ loadModules } satisfies ModuleLoader)
+    .bind(currentPackageKey).toFun([hostRootKey], hostRoot => relative(hostRoot, env['WORKING_DIR'] ?? hostRoot))
+    .bind(packageLoaderKey).toValue({ loadPackages } satisfies PackageLoader)
     .bind(dockerfileRendererKey).toValue({ renderDockerfile } satisfies DockerfileRenderer)
     .bind(dockerImageBuilderKey).toValue({ buildDockerImage } satisfies DockerImageBuilder)
     .bind(dockerImageExtractorKey).toValue({ extractFromImage } satisfies DockerImageExtractor)
-    .bind(modulesKey).toFun([rootKey, moduleLoaderKey], (root, loader) => loader.loadModules(root))
+    .bind(packagesKey).toFun([rootKey, packageLoaderKey], (root, loader) => loader.loadPackages(root))
     .bind(runnerKey).toFun(
-      [rootKey, modulesKey, dockerfileRendererKey, dockerImageBuilderKey],
-      (root, projects, renderer, builder) => buildRunner(root, projects, {
+      [rootKey, packagesKey, dockerfileRendererKey, dockerImageBuilderKey],
+      (root, packages, renderer, builder) => buildRunner(root, packages, {
         renderDockerfile: (r) => renderer.renderDockerfile(r),
         buildDockerImage: (content, tag, context) => builder.buildDockerImage(content, tag, context),
       })
     )
-    .bind(listCommandRunnerKey).toClass([modulesKey], ListCommandRunner)
-    .bind(runCommandRunnerKey).toClass([runnerKey, dockerImageExtractorKey, hostRootKey, currentModuleKey], RunCommandRunner)
+    .bind(listCommandRunnerKey).toClass([packagesKey], ListCommandRunner)
+    .bind(runCommandRunnerKey).toClass([runnerKey, dockerImageExtractorKey, hostRootKey, currentPackageKey], RunCommandRunner)
     .bind(commandRunnerKey).toClass([runCommandRunnerKey, listCommandRunnerKey], CompositeCommandRunner)
 }
 

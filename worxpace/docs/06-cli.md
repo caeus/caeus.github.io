@@ -15,11 +15,11 @@ Builds the target and every transitive dependency, then materializes the target'
 
 ```sh
 wx run packages/ui#ci#build
-wx run ci#build          # module inferred from cwd
+wx run ci#build          # package inferred from cwd
 ```
 
-The FQT may omit the module segment, which is then taken from your working directory. The
-suite can never be omitted on the command line. See
+The FQT may omit the package segment, which is then taken from your working directory. The
+facet can never be omitted on the command line. See
 [05 — Reference shorthands](05-deps-and-exports.md#reference-shorthands).
 
 What happens, in order:
@@ -31,7 +31,7 @@ What happens, in order:
 4. The target's own image is built. Docker's full build output streams to your terminal
    (`stdio: 'inherit'`), so `RUN` step output, test failures, and compiler errors appear inline.
 5. If the target declared `EXPORT`, a throwaway container copies each mapped path to the
-   module's directory on the host.
+   package's directory on the host.
 6. A final line is printed:
 
 ```
@@ -56,13 +56,13 @@ packages/ui#ci#build[packages/ui#ci#install]
 .#ci#deploy[packages/ui#ci#build]
 ```
 
-Format is `module#suite#target[dep, dep, ...]`. Dependencies are printed **fully expanded**,
-so this is the way to confirm that a shorthand like `'install'` resolved to the module you
+Format is `package#facet#target[dep, dep, ...]`. Dependencies are printed **fully expanded**,
+so this is the way to confirm that a shorthand like `'install'` resolved to the package you
 expected.
 
-`wx list` is also the cheapest validity check on a build file you just edited. If a module is
+`wx list` is also the cheapest validity check on a build file you just edited. If a package is
 missing from the output, its `package.wx` failed schema validation — see
-[11 — Troubleshooting](11-troubleshooting.md#my-module-doesnt-show-up-in-wx-list).
+[11 — Troubleshooting](11-troubleshooting.md#my-package-doesnt-show-up-in-wx-list).
 
 ## Environment variables
 
@@ -73,7 +73,7 @@ the behaviour.
 | --- | --- | --- |
 | `REPO_ROOT` | `Dockerfile` (`/repo`) | Repo root **as seen inside the worxpace container**. Used for loading `package.wx` files and as the base for Docker build contexts. Falls back to worxpace's own parent directory when unset. |
 | `HOST_REPO_ROOT` | `cli.sh` | Repo root **on the host**. Used for `EXPORT` bind mounts. Falls back to `REPO_ROOT`. |
-| `WORKING_DIR` | `wx` launcher | The host directory you invoked `wx` from. Its path relative to `HOST_REPO_ROOT` becomes the current module for FQT completion. Defaults to the repo root — in which case the relative path is empty and **no** module is inferred. |
+| `WORKING_DIR` | `wx` launcher | The host directory you invoked `wx` from. Its path relative to `HOST_REPO_ROOT` becomes the current package for FQT completion. Defaults to the repo root — in which case the relative path is empty and **no** package is inferred. |
 
 Why two roots exist is explained in [09 — Docker-in-Docker](09-docker-in-docker.md).
 
@@ -90,5 +90,5 @@ export async function main(
 ```
 
 `src/index.ts` calls it with the default. Tests and alternative front-ends can pass their own
-factory to swap in a fake Docker builder, a fixture module map, or a different loader without
+factory to swap in a fake Docker builder, a fixture package map, or a different loader without
 touching the command layer. See [08 — Internals](08-internals.md#the-di-container).

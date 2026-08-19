@@ -1,6 +1,6 @@
 # Authoring `package.wx`
 
-A `package.wx` file is an ES module whose **default export** describes one module's suites and
+A `package.wx` file is an ES module whose **default export** describes one package's facets and
 targets.
 
 ## The shape
@@ -13,20 +13,20 @@ export default {
       run: (deps) => ({
         FROM: '<image ref>',
         steps: [ /* Step objects */ ],
-        EXPORT: { '<abs path in image>': '<path relative to module dir>' },  // optional
+        EXPORT: { '<abs path in image>': '<path relative to package dir>' },  // optional
       }),
     },
   },
 }
 ```
 
-Formally (this is the Zod schema in `src/project/schema.ts`):
+Formally (this is the Zod schema in `src/pkg/schema.ts`):
 
 ```
-ModuleDef = Record<string, Suite>
-Suite     = Record<string, Target>
-Target    = { deps: string[] (default []), run: (deps) => Run }
-Run       = { FROM: string, steps: Step[], EXPORT?: Record<string, string> }
+PackageDef = Record<string, FacetDef>
+FacetDef   = Record<string, TargetDef>
+TargetDef  = { deps: string[] (default []), run: (deps) => Run }
+Run        = { FROM: string, steps: Step[], EXPORT?: Record<string, string> }
 ```
 
 Notes on validation:
@@ -36,8 +36,8 @@ Notes on validation:
   actually built.
 - `steps` is required. Use `steps: []` for a target that only re-tags or re-exports its base.
 - Every `Step` object is `.strict()`: an unknown or misspelled key makes validation fail.
-  **A module that fails validation is silently skipped** — see
-  [11 — Troubleshooting](11-troubleshooting.md#my-module-doesnt-show-up-in-wx-list).
+  **A package that fails validation is silently skipped** — see
+  [11 — Troubleshooting](11-troubleshooting.md#my-package-doesnt-show-up-in-wx-list).
 
 ## `run(deps)`
 
@@ -72,8 +72,8 @@ never a shell string.
 ### `COPY` and the build context
 
 `src` in a `COPY` without `from` is resolved against the **build context**, which is the
-module's own directory. For `packages/ui`, `{ COPY: { src: 'src', dest: '/repo/src' } }`
-copies `packages/ui/src`. You cannot `COPY` a path outside your module — that is Docker's
+package's own directory. For `packages/ui`, `{ COPY: { src: 'src', dest: '/repo/src' } }`
+copies `packages/ui/src`. You cannot `COPY` a path outside your package — that is Docker's
 rule, not worxpace's.
 
 A baked-in `.dockerignore` excludes `node_modules` and `.git` from every context.

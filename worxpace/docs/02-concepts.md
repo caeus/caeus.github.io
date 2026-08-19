@@ -3,20 +3,20 @@
 ## The four nouns
 
 ```
-module          a directory containing a package.wx
-  └── suite     a named group of targets (you choose the names; "ci" is a common one)
-        └── target   a unit of work → exactly one Docker image
+package             a directory containing a package.wx
+  └── facet         a named group of targets (you choose the names; "ci" is a common one)
+        └── target  a unit of work → exactly one Docker image
 ```
 
-- **Module** — a directory with a `package.wx` file. Its name is its path relative to the
-  repo root: `packages/ui`, `packages/common`. The repo root itself can be a module; its name
+- **Package** — a directory with a `package.wx` file. Its name is its path relative to the
+  repo root: `packages/ui`, `packages/common`. The repo root itself can be a package; its name
   is `.`.
-- **Suite** — an arbitrary string key grouping targets. worxpace attaches no meaning to suite
+- **Facet** — an arbitrary string key grouping targets. worxpace attaches no meaning to facet
   names; `ci` is a convention, not a keyword. You could have `ci`, `release`, and `dev`
-  suites side by side.
+  facets side by side.
 - **Target** — a `{ deps, run }` pair. One target produces one image.
 - **FQT** (fully-qualified target) — the address of a target, written
-  `module#suite#target`, e.g. `packages/ui#ci#build`.
+  `package#facet#target`, e.g. `packages/ui#ci#build`.
 
 ## Images are the artifacts
 
@@ -42,7 +42,7 @@ run: (deps) => ({
 
 The first form is a linear chain and is by far the most common: `install` → `build` → `pack`,
 each one a thin layer on top of the last. The second form is how you pull an artifact across
-module boundaries without inheriting the other module's whole filesystem.
+package boundaries without inheriting the other package's whole filesystem.
 
 ## Caching
 

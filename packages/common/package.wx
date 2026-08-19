@@ -1,7 +1,7 @@
-import { ciSuite } from 'wx:/stacks/ts-lib'
+import { ciFacet } from 'wx:/stacks/ts-lib'
 
 export default {
-  ci: ciSuite({
+  ci: ciFacet({
     name: 'common',
     scope: 'caeus',
     deps: [

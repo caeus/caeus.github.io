@@ -18,7 +18,7 @@ without being able to touch the filesystem, the network, or the host process.
 | Page | What's in it |
 | --- | --- |
 | [01 — Getting started](01-getting-started.md) | Install the `wx` launcher, prerequisites, first run |
-| [02 — Concepts](02-concepts.md) | Modules, suites, targets, FQTs, images-as-artifacts |
+| [02 — Concepts](02-concepts.md) | Packages, facets, targets, FQTs, images-as-artifacts |
 | [03 — Authoring `package.wx`](03-authoring-package-wx.md) | The full schema and every `Step` kind |
 | [04 — The sandbox and `wx:/` imports](04-sandbox-and-imports.md) | What your build files can and cannot do |
 | [05 — Dependencies and `EXPORT`](05-deps-and-exports.md) | Dep shorthands, the `deps` map, getting files onto the host |
@@ -27,7 +27,7 @@ without being able to touch the filesystem, the network, or the host process.
 | [08 — Internals](08-internals.md) | The pipeline end to end, tag derivation, DI container |
 | [09 — Docker-in-Docker](09-docker-in-docker.md) | Why `REPO_ROOT` and `HOST_REPO_ROOT` both exist |
 | [10 — Adopting in a new monorepo](10-adopting-in-a-new-monorepo.md) | Checklist for vendoring worxpace elsewhere |
-| [11 — Troubleshooting](11-troubleshooting.md) | Silent module drops, export failures, common errors |
+| [11 — Troubleshooting](11-troubleshooting.md) | Silent package drops, export failures, common errors |
 
 ## Thirty-second tour
 

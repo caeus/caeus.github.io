@@ -8,42 +8,42 @@ segments are filled from context (`FQT.parse` in `src/runner/index.ts`):
 | Written | Segments | Resolves to |
 | --- | --- | --- |
 | `packages/ui#ci#build` | 3 | Exactly that. Always unambiguous. |
-| `ci#build` | 2 | `<current module>#ci#build` |
-| `build` | 1 | `<current module>#<current suite>#build` |
+| `ci#build` | 2 | `<current package>#ci#build` |
+| `build` | 1 | `<current package>#<current facet>#build` |
 
-Inside a `deps` array, "context" is the module **and** suite of the target doing the
+Inside a `deps` array, "context" is the package **and** facet of the target doing the
 depending. So all three forms work in `deps`:
 
 ```js
 export default {
   ci: {
     install: { deps: [], run: ... },
-    build:   { deps: ['install'], run: ... },                      // same module, same suite
-    docs:    { deps: ['release#bundle'], run: ... },               // same module, other suite
-    deploy:  { deps: ['packages/ui#ci#build'], run: ... },         // another module
+    build:   { deps: ['install'], run: ... },                      // same package, same facet
+    docs:    { deps: ['release#bundle'], run: ... },               // same package, other facet
+    deploy:  { deps: ['packages/ui#ci#build'], run: ... },         // another package
   },
 }
 ```
 
-On the **command line**, only the module is inferred, from `WORKING_DIR`. There is no current
-suite, so a bare target name always fails:
+On the **command line**, only the package is inferred, from `WORKING_DIR`. There is no current
+facet, so a bare target name always fails:
 
 ```sh
 cd packages/ui
 wx run packages/ui#ci#build   # ✓
-wx run ci#build               # ✓ module inferred from cwd
-wx run build                  # ✗ Error: Suite required when only target is provided: build
+wx run ci#build               # ✓ package inferred from cwd
+wx run build                  # ✗ Error: Facet required when only target is provided: build
 ```
 
-**At the repo root, nothing is inferred.** `currentModule` is computed as
+**At the repo root, nothing is inferred.** `currentPackage` is computed as
 `relative(hostRoot, WORKING_DIR)`, which is the empty string when the two are the same, and an
-empty module means no context is passed at all. So from the repo root every FQT must be fully
-qualified — including targets of the root module itself, whose module name is `.`:
+empty package means no context is passed at all. So from the repo root every FQT must be fully
+qualified — including targets of the root package itself, whose package name is `.`:
 
 ```sh
 cd <repo root>
 wx run .#ci#deploy            # ✓
-wx run ci#deploy              # ✗ Error: Module required when only suite#target is provided
+wx run ci#deploy              # ✗ Error: Package required when only facet#target is provided
 ```
 
 ## The `deps` map
@@ -113,7 +113,7 @@ The check happens at run time, not load time, so `wx list` will happily print a 
 `EXPORT` is how files get out of an image and onto your host filesystem. It is a
 `Record<string, string>`, and the direction of each half is the thing to remember:
 
-> **Keys are absolute paths inside the image. Values are paths relative to the module's
+> **Keys are absolute paths inside the image. Values are paths relative to the package's
 > directory on the host.**
 
 ```js
@@ -124,10 +124,10 @@ EXPORT: {
 }
 ```
 
-A value of `'.'` means the module directory itself:
+A value of `'.'` means the package directory itself:
 
 ```js
-// in the root package.wx (module '.')
+// in the root package.wx (package '.')
 EXPORT: { '/docs': 'docs' }          // image /docs → <repo root>/docs
 ```
 
@@ -151,11 +151,11 @@ Without this rule, building anything would spray files across your working tree.
 
 ### How extraction works, and what it requires
 
-For each `src → dest` pair, worxpace runs a throwaway container with the module directory
+For each `src → dest` pair, worxpace runs a throwaway container with the package directory
 bind-mounted and copies the contents:
 
 ```sh
-docker run --rm -v <module dir>:/host-out <image> \
+docker run --rm -v <package dir>:/host-out <image> \
   sh -c 'mkdir -p /host-out/<dest> && cp -r <src>/. /host-out/<dest>/'
 ```
 

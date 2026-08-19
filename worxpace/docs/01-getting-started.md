@@ -73,7 +73,7 @@ wx run packages/ui#ci#build
 
 ## Running from inside a package
 
-`WORKING_DIR` lets worxpace infer the module you are standing in, so you can drop the module
+`WORKING_DIR` lets worxpace infer the package you are standing in, so you can drop the package
 segment of the target name:
 
 ```sh
@@ -81,7 +81,7 @@ cd packages/ui
 wx run ci#build      # same as: wx run packages/ui#ci#build
 ```
 
-The suite is never inferred — `wx run build` fails. See
+The facet is never inferred — `wx run build` fails. See
 [05 — Dependencies and `EXPORT`](05-deps-and-exports.md#reference-shorthands) for the full
 resolution rules.
 

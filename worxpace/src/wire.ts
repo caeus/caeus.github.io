@@ -47,11 +47,10 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
     .bind(dockerImageExtractorKey).toValue({ extractFromImage } satisfies DockerImageExtractor)
     .bind(modulesKey).toFun([rootKey, moduleLoaderKey], (root, loader) => loader.loadModules(root))
     .bind(runnerKey).toFun(
-      [rootKey, modulesKey, dockerfileRendererKey, dockerImageBuilderKey, dockerImageExtractorKey],
-      (root, projects, renderer, builder, extractor) => buildRunner(root, projects, {
+      [rootKey, modulesKey, dockerfileRendererKey, dockerImageBuilderKey],
+      (root, projects, renderer, builder) => buildRunner(root, projects, {
         renderDockerfile: (r) => renderer.renderDockerfile(r),
         buildDockerImage: (content, tag, context) => builder.buildDockerImage(content, tag, context),
-        extractFromImage: (imageTag, exportMap, destDir) => extractor.extractFromImage(imageTag, exportMap, destDir),
       })
     )
     .bind(listCommandRunnerKey).toClass([modulesKey], ListCommandRunner)

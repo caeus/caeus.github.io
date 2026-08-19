@@ -6,7 +6,6 @@ import type { FQT, TaskResult } from './index.js'
 export interface TargetRunnerDeps {
   renderDockerfile(run: ReturnType<Target['run']>): string
   buildDockerImage(content: string, tag: string, context: string): Promise<BuildResult>
-  extractFromImage(imageTag: string, exportMap: Readonly<Record<string, string>>, destDir: string): Promise<void>
 }
 
 export async function runTarget(fqt: FQT, target: Target, depResults: TaskResult[], root: string, deps: TargetRunnerDeps): Promise<TaskResult> {

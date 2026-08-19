@@ -4,7 +4,7 @@ import { resolve, relative, extname } from 'node:path'
 import { ModuleDef } from './schema.js'
 
 const WX_PREFIX = 'wx:/'
-const BUILD_FILE = 'build.wx'
+const PACKAGE_FILE = 'package.wx'
 
 export interface ModuleLoader {
   loadModules(root: string): Promise<ReadonlyMap<string, ModuleDef>>
@@ -56,8 +56,8 @@ export async function loadModules(root: string): Promise<ReadonlyMap<string, Mod
   }
   const result = new Map<string, ModuleDef>()
   const rootEntries = await readdir(root, { withFileTypes: true })
-  if (rootEntries.some(e => !e.isDirectory() && e.name === BUILD_FILE)) {
-    const project = await loadProject(resolve(root, BUILD_FILE), ctx)
+  if (rootEntries.some(e => !e.isDirectory() && e.name === PACKAGE_FILE)) {
+    const project = await loadProject(resolve(root, PACKAGE_FILE), ctx)
     if (project) result.set('.', project)
   }
   await walk(resolve(root, 'packages'), ctx, result)
@@ -66,8 +66,8 @@ export async function loadModules(root: string): Promise<ReadonlyMap<string, Mod
 
 async function walk(dir: string, ctx: LoadContext, acc: Map<string, ModuleDef>): Promise<void> {
   const entries = await readdir(dir, { withFileTypes: true })
-  if (entries.some(e => !e.isDirectory() && e.name === BUILD_FILE)) {
-    const project = await loadProject(resolve(dir, BUILD_FILE), ctx)
+  if (entries.some(e => !e.isDirectory() && e.name === PACKAGE_FILE)) {
+    const project = await loadProject(resolve(dir, PACKAGE_FILE), ctx)
     if (project) acc.set(relative(ctx.root, dir), project)
     return
   }

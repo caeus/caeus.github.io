@@ -32,21 +32,21 @@ export class FQT {
   }
 }
 
-export interface TaskResult {
+export interface TargetResult {
   readonly fqt: FQT
   readonly imageTag: string
   readonly imageDigest: string
   readonly export?: Readonly<Record<string, string>>
 }
 
-export type Runner = (fqt: FQT) => Promise<TaskResult>
+export type Runner = (fqt: FQT) => Promise<TargetResult>
 
 export { type TargetRunnerDeps }
 
 export function buildRunner(root: string, packages: ReadonlyMap<string, PackageDef>, deps: TargetRunnerDeps): Runner {
-  const memo = new Map<string, Promise<TaskResult>>()
+  const memo = new Map<string, Promise<TargetResult>>()
 
-  const run = (raw: string, trace: readonly string[] = []): Promise<TaskResult> => {
+  const run = (raw: string, trace: readonly string[] = []): Promise<TargetResult> => {
     const cached = memo.get(raw)
     if (cached) return cached
 

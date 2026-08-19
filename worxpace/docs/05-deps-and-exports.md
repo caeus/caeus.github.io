@@ -124,26 +124,59 @@ EXPORT: {
 }
 ```
 
-A value of `'.'` means the package directory itself:
-
 ```js
 // in the root package.wx (package '.')
 EXPORT: { '/docs': 'docs' }          // image /docs → <repo root>/docs
 ```
 
-Keys may be **directories or individual files**, and the two behave differently in one respect:
-for a directory the *contents* are copied into `dest`, while a file is copied *to* `dest`.
+### Trailing slashes decide what happens
 
-```js
-EXPORT: {
-  '/repo/dist': 'dist',                  // contents of /repo/dist → <pkg>/dist/
-  '/repo/package.json': 'package.json',  // the file            → <pkg>/package.json
-}
+Keys and values follow the convention `cp` and `rsync` use, and it is the *only* thing that
+determines behaviour — worxpace never inspects the image to guess whether a path is a file or a
+directory:
+
+> **A trailing slash on the source means "the contents of". A trailing slash on the destination
+> means "inside this directory". No slash means "this exact node".**
+
+| Entry | Result |
+| --- | --- |
+| `'/repo/dist': 'dist'` | `dist` becomes exactly `/repo/dist` — **replaced** |
+| `'/repo/dist/': 'dist/'` | contents of `/repo/dist` **merged** into `dist` |
+| `'/repo/dist': 'build/'` | placed inside → `build/dist`, replaced |
+| `'/repo/package.json': 'package.json'` | the file becomes exactly that path, replaced |
+
+Two consequences worth internalising:
+
+- **Files and directories are not special cases.** `cp -a` copies either one to an exact
+  destination, so a single-file export needs no different syntax. That is what makes a "sync the
+  generated config to my host" target practical: generate manifests inside the image, export
+  exactly the ones the host should see, and leave container-only files like `.pnpmfile.cjs`
+  behind.
+- **The no-slash form deletes first.** Replacing removes the destination before copying, so
+  files the build no longer produces disappear. This is what stops a hash-named bundle directory
+  from accumulating every past build. Use the slash form when you want additive behaviour.
+
+Since a replace deletes, `EXPORT`-ing `node_modules` will remove whatever the host had there —
+including a platform-correct install you did by hand. Good reason not to export `node_modules`
+from a target you run casually.
+
+### The package directory cannot be replaced
+
+`'.'` is rejected, because it is the replace form aimed at the package directory itself:
+
+```
+EXPORT "/docs" -> ".": cannot replace the package directory itself; use "./" to merge into it
 ```
 
-Single-file exports are what make a "sync the generated config to my host" target practical —
-generate manifests inside the image, then export exactly the ones the host should see, leaving
-container-only files like `.pnpmfile.cjs` behind.
+The destination is a bind mount of that directory — for the root package, your entire
+repository — so a replace there would `rm -rf` the working tree. The merge form `'./'` is fine
+and often what you want: it copies into the package directory without deleting anything, which
+is how you'd sync a whole directory of generated files without listing each one.
+
+```js
+EXPORT: { '/out/': './' }    // contents of /out merged into the package directory
+EXPORT: { '/repo/dist': './' } // replaces just <pkg>/dist — safe, the root is untouched
+```
 
 ### Only the invoked target exports
 
@@ -166,32 +199,27 @@ Without this rule, building anything would spray files across your working tree.
 ### How extraction works, and what it requires
 
 For each `src → dest` pair, worxpace runs a throwaway container with the package directory
-bind-mounted, branching on whether the source is a directory:
+bind-mounted. Which command runs depends only on the trailing slashes, never on inspecting the
+image:
 
 ```sh
+# source ends in "/" — merge contents, delete nothing
 docker run --rm -v <package dir>:/host-out <image> sh -c \
-  'if [ -d "<src>" ]; then mkdir -p "<dest>" && cp -r "<src>"/. "<dest>"/; \
-   else mkdir -p "$(dirname "<dest>")" && cp "<src>" "<dest>"; fi'
+  'mkdir -p "<dest>" && cp -a "<src>"/. "<dest>"/'
+
+# otherwise — the node becomes <dest> exactly, replacing whatever was there
+docker run --rm -v <package dir>:/host-out <image> sh -c \
+  'mkdir -p "$(dirname "<dest>")" && rm -rf "<dest>" && cp -a "<src>" "<dest>"'
 ```
 
 Implications:
 
 - **The image needs a shell**, plus `mkdir`, `cp`, and `dirname`. You cannot `EXPORT` from a
   `scratch` or distroless image. Keep a `FROM alpine`-family layer as the export target.
-- For directories `cp -r <src>/.` is used, so the *contents* of `src` land in `dest`, not `src`
-  itself. `'/repo/dist': 'dist'` gives you `dist/index.js`, not `dist/dist/index.js`.
-- For files, intermediate directories in `dest` are created as needed.
+- Intermediate directories in `dest` are created as needed, in both forms.
 - Files are written by the container's user, typically root. Exported trees may be
   root-owned on Linux hosts.
-- **A directory export replaces its destination.** The destination is removed before the copy,
-  so files the build no longer produces disappear from the host. This is what keeps a
-  hash-named bundle directory from accumulating every past build's output.
-- The one exception is `dest: '.'`, which names the bind-mount root — the package directory
-  itself. That is never removed, so exporting to `'.'` merges. Export into a named
-  subdirectory when you want replace semantics.
-- Since a directory export deletes first, `EXPORT`-ing `node_modules` will remove whatever the
-  host had there, including a platform-correct install done by hand. That is a good reason not
-  to export `node_modules` from a target you run casually.
+- One container per entry, run sequentially.
 
 ### Exported `node_modules` are Linux binaries
 

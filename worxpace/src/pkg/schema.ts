@@ -24,7 +24,24 @@ export const Run = z
     IGNORE: z.array(z.string()).readonly(),
     EXPORT: z.record(z.string(), z.string()).readonly().optional(),
   })
-  .readonly();
+  .readonly()
+  .superRefine((run, ctx) => {
+    for (const [src, dest] of Object.entries(run.EXPORT ?? {})) {
+      const contentsOf = src.endsWith("/");
+      const intoDirectory = dest.endsWith("/");
+      const destPath = dest.replace(/\/+$/, "");
+      if (contentsOf && !intoDirectory)
+        ctx.addIssue({
+          code: "custom",
+          message: `EXPORT "${src}" -> "${dest}": a trailing slash on the source means "the contents of", so the destination must end in "/" too`,
+        });
+      if (!intoDirectory && (destPath === "" || destPath === "."))
+        ctx.addIssue({
+          code: "custom",
+          message: `EXPORT "${src}" -> "${dest}": cannot replace the package directory itself; use "./" to merge into it`,
+        });
+    }
+  });
 export interface Run extends z.infer<typeof Run> {}
 
 export type RunFn = (deps: Readonly<Record<string, string>>) => Run;

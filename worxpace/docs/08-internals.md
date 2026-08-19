@@ -11,11 +11,11 @@ src/
 ├── wire.ts                     DI bindings + main()
 ├── di-container.ts             the container (no external DI dependency)
 ├── commands/index.ts           arg parsing + one runner class per command
-├── project/
+├── pkg/
 │   ├── schema.ts               Zod schemas for PackageDef/FacetDef/TargetDef/Run/Step
 │   └── loader.ts               filesystem walk + vm sandbox evaluation
 └── runner/
-    ├── index.ts                FQT, TaskResult, buildRunner (graph walk + memo)
+    ├── index.ts                FQT, TargetResult, buildRunner (graph walk + memo)
     ├── target-runner.ts        runTarget: one target → one image
     ├── dockerfile-renderer.ts  Run → Dockerfile text
     ├── docker-builder.ts       docker buildx build
@@ -35,7 +35,7 @@ argv ──► parseCmd ──► Cmd
      {pkg: currentPackage})     the loaded graph → stdout
          │
          ▼
-  buildRunner(root, packages, deps)   ── memo: Map<string, Promise<TaskResult>>
+  buildRunner(root, packages, deps)   ── memo: Map<string, Promise<TargetResult>>
          │
          │  for each dep, recursively (Promise.all), with a cycle trace
          ▼
@@ -49,7 +49,7 @@ argv ──► parseCmd ──► Cmd
          └─ build     = buildDockerImage(content, tag, packageDir, runDef.IGNORE)
          │
          ▼
-  TaskResult { fqt, imageTag, imageDigest, export? }
+  TargetResult { fqt, imageTag, imageDigest, export? }
          │
          ▼
   RunCommandRunner: if result.export, extractFromImage(imageTag, export, join(hostRoot, pkg))
@@ -99,7 +99,7 @@ class FQT {
 
 `parse` splits on `#` and fills missing leading segments from `context`, throwing
 `Package required...` or `Facet required...` when context is insufficient. `Runner` is
-`(fqt: FQT) => Promise<TaskResult>` — it takes the parsed object, never a string, so no layer
+`(fqt: FQT) => Promise<TargetResult>` — it takes the parsed object, never a string, so no layer
 re-parses what an earlier layer already parsed.
 
 The field is `pkg`, not `package`, because `package` is a future-reserved word in strict mode
@@ -108,7 +108,7 @@ that a TS parameter property implies, so the abbreviation is uniform rather than
 
 ## Graph walk and memoization
 
-`buildRunner` closes over a `Map<string, Promise<TaskResult>>` keyed by the fully-qualified FQT
+`buildRunner` closes over a `Map<string, Promise<TargetResult>>` keyed by the fully-qualified FQT
 string. Because the *promise* is memoized rather than the result, two concurrent requests for
 the same target share one in-flight build — the `memoizes` test asserts exactly one
 `buildDockerImage` call for two parallel `runner()` invocations.
@@ -143,7 +143,7 @@ Because tags are deterministic, they are also predictable from outside worxpace 
 
 ## Building
 
-`buildDockerImage(content, tag, contextPath)` writes to a temp directory:
+`buildDockerImage(content, tag, contextPath, ignore)` writes to a temp directory:
 
 - `<base>.Dockerfile` — the rendered content.
 - `<base>.Dockerfile.dockerignore` — the target's `IGNORE` list, one entry per line, and
@@ -158,7 +158,7 @@ docker buildx build --load -t <tag> --iidfile <iid> -f <dockerfile> <contextPath
 ```
 
 `--load` is required so the built image lands in the local daemon's image store where the next
-target's `FROM` and the extractor can find it. The digest in `TaskResult` is the trimmed
+target's `FROM` and the extractor can find it. The digest in `TargetResult` is the trimmed
 contents of the iidfile. All three temp files are removed in a `finally`.
 
 The subprocess uses `stdio: 'inherit'`, so Docker's output is your output — no buffering, no
@@ -168,16 +168,37 @@ swallowed error messages.
 
 ```sh
 docker run --rm -v <destDir>:/host-out <imageTag> \
-  sh -c 'if [ -d "<src>" ]; then rm -rf "<dest>" && mkdir -p "<dest>" && cp -r "<src>"/. "<dest>"/;
-         else mkdir -p "$(dirname "<dest>")" && cp "<src>" "<dest>"; fi'
+  # source ends in "/" — merge contents, delete nothing
+  sh -c 'mkdir -p "<dest>" && cp -a "<src>"/. "<dest>"/'
+
+  # otherwise — the node becomes <dest> exactly, replacing whatever was there
+  sh -c 'mkdir -p "$(dirname "<dest>")" && rm -rf "<dest>" && cp -a "<src>" "<dest>"'
 ```
 
-One container per entry in the `EXPORT` map, run sequentially. `dest === '.'` maps to
-`/host-out` directly rather than `/host-out/.`, and in that single case the `rm -rf` is omitted
-— `/host-out` is the bind-mount root, so removing it would wipe the whole package directory.
-For every other directory destination the removal makes the export a replace rather than a
-merge, which is what stops stale build output surviving on the host. The file branch copies to
-`dest` and creates parent directories.
+One container per entry in the `EXPORT` map, run sequentially. Which of the two scripts runs is
+decided **entirely by the path syntax** — `copyScript` never inspects the image. That is why
+files and directories need no separate handling: `cp -a` copies either to an exact destination.
+A destination ending in `/` resolves to `<dest>/<basename(src)>`.
+
+`copyScript` throws for a replace aimed at the package directory itself (`'.'` or `''`), since
+that would `rm -rf` the bind mount. `Run`'s schema rejects the same shape, so it normally never
+reaches here; the check is duplicated because the failure mode is destroying a working tree.
+
+## Validating `run()` output
+
+`PackageDef` is parsed when a `package.wx` loads, but that only checks `deps` and that `run` is
+a function — it cannot see what `run` *returns*, since the function is not called until build
+time. So `runTarget` parses the result:
+
+```ts
+const parsed = Run.safeParse(target.run(depsMap))
+if (!parsed.success) throw new Error(`Invalid run definition for ${fqt}: ${parsed.error.message}`)
+```
+
+This is what makes the `Run` schema load-bearing rather than a type-level fiction. A missing
+`IGNORE`, a misspelled step key, or an incoherent `EXPORT` pairing surfaces as a named error
+against a specific FQT, before any Docker build starts — instead of a `TypeError` deep in the
+builder.
 
 ## The DI container
 

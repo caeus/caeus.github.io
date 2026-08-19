@@ -40,8 +40,12 @@ Notes on validation:
 - `IGNORE` is required, and `IGNORE: []` means "upload the whole context". Also no default —
   see [`IGNORE`](#ignore) below.
 - Every `Step` object is `.strict()`: an unknown or misspelled key makes validation fail.
-  **A package that fails validation is silently skipped** — see
-  [11 — Troubleshooting](11-troubleshooting.md#my-package-doesnt-show-up-in-wx-list).
+
+Where a mistake surfaces depends on which half is wrong. The *package* shape — facets, targets,
+`deps`, `run`-is-a-function — is checked when `package.wx` loads, and a failure **silently skips
+the package**. What `run()` *returns* cannot be checked then, because the function isn't called
+until build time; that is validated in `runTarget` and fails loudly, naming the target. See
+[11 — Troubleshooting](11-troubleshooting.md#my-package-doesnt-show-up-in-wx-list).
 
 ## `run(deps)`
 

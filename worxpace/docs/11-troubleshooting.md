@@ -12,9 +12,7 @@ Causes, roughly in order of likelihood:
 - **A misspelled or unknown key in a `Step`.** Every step variant is `.strict()`, so
   `{ RUNN: '...' }`, `{ WORKIDR: '...' }`, or `{ COPY: { src, dst } }` (should be `dest`)
   fails validation. One bad step invalidates the entire package.
-- **A missing `IGNORE` or `deps`.** Both are required on every target and neither has a
-  default, so a `Run` without `IGNORE` — easy to forget when hand-writing a target — takes the
-  whole package down with it.
+- **A missing `deps`.** Required, with no default.
 - **`run` is not a function.** `run: { FROM: ..., steps: [] }` — a common slip — fails the
   `z.custom<RunFn>` check.
 - **A helper returned `undefined`.** If a factory in `stacks/` forgets a `return`, or a
@@ -37,6 +35,19 @@ return deepFreeze(result.data)
 ```
 
 Zod's error is precise about which key in which step failed.
+
+Note that only the *package* shape is checked at load time. What `run()` returns is validated
+separately, at build time — see below.
+
+## `Invalid run definition for <fqt>: …`
+
+Raised when `run()` returns something `Run` rejects: a missing `IGNORE` or `steps`, a misspelled
+step key, an incoherent `EXPORT` pairing. Unlike a bad package shape this is **loud and names the
+target**, because it happens in `runTarget` after the function is actually called.
+
+The distinction matters when you're hunting a problem: a package missing from `wx list` is a
+`package.wx`-shape failure, while a target that fails the moment you run it is a `run()`-output
+failure.
 
 ## `Only wx:/ imports are allowed in package.wx, got: <specifier>`
 
@@ -115,8 +126,8 @@ Three possibilities, in order:
 
 1. **You didn't invoke that target directly.** Only the target named on the command line
    materializes its `EXPORT`; transitive deps do not. Run the target itself.
-2. **The image has no shell.** Extraction runs `sh -c 'if [ -d … ] … cp …'` inside the image,
-   so it needs `sh`, `mkdir`, `cp`, and `dirname`. `scratch` and distroless images cannot be
+2. **The image has no shell.** Extraction runs `sh -c 'mkdir … && cp -a …'` inside the image, so
+   it needs `sh`, `mkdir`, `cp`, and `dirname`. `scratch` and distroless images cannot be
    exported from.
 3. **The bind mount resolved to the wrong filesystem.** Extraction mounts a *host* path,
    because the daemon resolves `-v`. If `HOST_REPO_ROOT` is wrong — or the daemon is genuinely

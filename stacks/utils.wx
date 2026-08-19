@@ -2,9 +2,9 @@ export const pnpmfile = (scope) => `function readPackage(pkg) {
   for (const depField of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
     const deps = pkg[depField]
     if (!deps) continue
-    for (const [name, version] of Object.entries(deps)) {
-      if (version.startsWith('workspace:')) {
-        const tarball = name.replace(/^@${scope}\\//, '').replace(/\\//g, '-')
+    for (const name of Object.keys(deps)) {
+      if (name.startsWith('@${scope}/')) {
+        const tarball = name.slice('@${scope}/'.length).replace(/\\//g, '-')
         deps[name] = \`file:./\${tarball}.tgz\`
       }
     }
@@ -15,12 +15,12 @@ export const pnpmfile = (scope) => `function readPackage(pkg) {
 module.exports = { hooks: { readPackage } }
 `
 
-export function buildPackageJson({ name, scope, deps = [], coreDeps = [], coreDevDeps = [], extra = {}, versions }) {
+export function buildPackageJson({ name, scope, version, deps = [], coreDeps = [], coreDevDeps = [], extra = {}, versions }) {
   const dependencies = Object.fromEntries([
     ...coreDeps.map(pkg => [pkg, versions[pkg]]),
     ...deps.map(d =>
       'local' in d
-        ? [`@${scope}/${d.local}`, 'workspace:*']
+        ? [`@${scope}/${d.local}`, '>=0.0.0']
         : [d.remote, versions[d.remote]]
     )
   ])
@@ -29,8 +29,7 @@ export function buildPackageJson({ name, scope, deps = [], coreDeps = [], coreDe
   )
   return {
     name: `@${scope}/${name}`,
-    version: '0.0.0',
-    private: true,
+    version,
     type: 'module',
     ...extra,
     dependencies,

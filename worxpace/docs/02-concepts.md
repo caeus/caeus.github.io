@@ -22,7 +22,7 @@ package             a directory containing a package.wx
 
 This is the central idea and everything else follows from it.
 
-A target's `run` function returns `{ FROM, steps, EXPORT? }`. worxpace renders that to a
+A target's `run` function returns `{ FROM, steps, IGNORE, EXPORT? }`. worxpace renders that to a
 Dockerfile and builds it. The resulting image *is* the output. There is no `dist/` directory
 on your host unless you explicitly ask for one via `EXPORT`.
 

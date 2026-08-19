@@ -46,7 +46,7 @@ argv ──► parseCmd ──► Cmd
          ├─ depsMap   = { <raw dep string>: <dep image tag> }
          ├─ runDef    = target.run(depsMap)
          ├─ content   = renderDockerfile(runDef)
-         └─ build     = buildDockerImage(content, tag, packageDir)
+         └─ build     = buildDockerImage(content, tag, packageDir, runDef.IGNORE)
          │
          ▼
   TaskResult { fqt, imageTag, imageDigest, export? }
@@ -146,9 +146,9 @@ Because tags are deterministic, they are also predictable from outside worxpace 
 `buildDockerImage(content, tag, contextPath)` writes to a temp directory:
 
 - `<base>.Dockerfile` — the rendered content.
-- `<base>.Dockerfile.dockerignore` — `node_modules\n.git\n`. Docker looks for
-  `<dockerfile>.dockerignore` when `-f` points outside the context, which is what lets a
-  temp-file Dockerfile still carry ignore rules.
+- `<base>.Dockerfile.dockerignore` — the target's `IGNORE` list, one entry per line, and
+  nothing else. Docker looks for `<dockerfile>.dockerignore` when `-f` points outside the
+  context, which is what lets a temp-file Dockerfile still carry ignore rules.
 - `<base>.iid` — receives the image ID.
 
 Then:
@@ -168,11 +168,16 @@ swallowed error messages.
 
 ```sh
 docker run --rm -v <destDir>:/host-out <imageTag> \
-  sh -c 'mkdir -p /host-out/<dest> && cp -r <src>/. /host-out/<dest>/'
+  sh -c 'if [ -d "<src>" ]; then rm -rf "<dest>" && mkdir -p "<dest>" && cp -r "<src>"/. "<dest>"/;
+         else mkdir -p "$(dirname "<dest>")" && cp "<src>" "<dest>"; fi'
 ```
 
 One container per entry in the `EXPORT` map, run sequentially. `dest === '.'` maps to
-`/host-out` directly rather than `/host-out/.`.
+`/host-out` directly rather than `/host-out/.`, and in that single case the `rm -rf` is omitted
+— `/host-out` is the bind-mount root, so removing it would wipe the whole package directory.
+For every other directory destination the removal makes the export a replace rather than a
+merge, which is what stops stale build output surviving on the host. The file branch copies to
+`dest` and creates parent directories.
 
 ## The DI container
 

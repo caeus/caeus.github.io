@@ -21,6 +21,7 @@ export const Run = z
   .object({
     FROM: z.string(),
     steps: z.array(Step).readonly(),
+    IGNORE: z.array(z.string()).readonly(),
     EXPORT: z.record(z.string(), z.string()).readonly().optional(),
   })
   .readonly();
@@ -30,7 +31,7 @@ export type RunFn = (deps: Readonly<Record<string, string>>) => Run;
 
 export const TargetDef = z
   .object({
-    deps: z.array(z.string()).readonly().default([]),
+    deps: z.array(z.string()).readonly(),
     run: z.custom<RunFn>((v) => typeof v === "function"),
   })
   .readonly();

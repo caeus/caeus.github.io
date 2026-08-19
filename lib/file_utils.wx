@@ -3,11 +3,11 @@ export function writeText(path, content) {
 }
 
 export function writeJson(path, value) {
-  return writeText(path, JSON.stringify(value, null, 2))
+  return writeText(path, `${JSON.stringify(value, null, 2)}\n`)
 }
 
 export function writeYaml(path, value) {
-  return writeText(path, toYaml(value, 0))
+  return writeText(path, `${toYaml(value, 0)}\n`)
 }
 
 function toYaml(value, depth) {

@@ -131,6 +131,20 @@ A value of `'.'` means the package directory itself:
 EXPORT: { '/docs': 'docs' }          // image /docs → <repo root>/docs
 ```
 
+Keys may be **directories or individual files**, and the two behave differently in one respect:
+for a directory the *contents* are copied into `dest`, while a file is copied *to* `dest`.
+
+```js
+EXPORT: {
+  '/repo/dist': 'dist',                  // contents of /repo/dist → <pkg>/dist/
+  '/repo/package.json': 'package.json',  // the file            → <pkg>/package.json
+}
+```
+
+Single-file exports are what make a "sync the generated config to my host" target practical —
+generate manifests inside the image, then export exactly the ones the host should see, leaving
+container-only files like `.pnpmfile.cjs` behind.
+
 ### Only the invoked target exports
 
 This is the most important rule about `EXPORT` and it is deliberate.
@@ -152,23 +166,32 @@ Without this rule, building anything would spray files across your working tree.
 ### How extraction works, and what it requires
 
 For each `src → dest` pair, worxpace runs a throwaway container with the package directory
-bind-mounted and copies the contents:
+bind-mounted, branching on whether the source is a directory:
 
 ```sh
-docker run --rm -v <package dir>:/host-out <image> \
-  sh -c 'mkdir -p /host-out/<dest> && cp -r <src>/. /host-out/<dest>/'
+docker run --rm -v <package dir>:/host-out <image> sh -c \
+  'if [ -d "<src>" ]; then mkdir -p "<dest>" && cp -r "<src>"/. "<dest>"/; \
+   else mkdir -p "$(dirname "<dest>")" && cp "<src>" "<dest>"; fi'
 ```
 
 Implications:
 
-- **The image needs a shell**, plus `mkdir` and `cp`. You cannot `EXPORT` from a `scratch` or
-  distroless image. Keep a `FROM alpine`-family layer as the export target.
-- Because `cp -r <src>/.` is used, the *contents* of `src` land in `dest`, not `src` itself.
-  `'/repo/dist': 'dist'` gives you `dist/index.js`, not `dist/dist/index.js`.
+- **The image needs a shell**, plus `mkdir`, `cp`, and `dirname`. You cannot `EXPORT` from a
+  `scratch` or distroless image. Keep a `FROM alpine`-family layer as the export target.
+- For directories `cp -r <src>/.` is used, so the *contents* of `src` land in `dest`, not `src`
+  itself. `'/repo/dist': 'dist'` gives you `dist/index.js`, not `dist/dist/index.js`.
+- For files, intermediate directories in `dest` are created as needed.
 - Files are written by the container's user, typically root. Exported trees may be
   root-owned on Linux hosts.
-- Existing files at the destination are overwritten; files not present in the image are left
-  alone. Extraction is a merge, not a sync — it never deletes.
+- **A directory export replaces its destination.** The destination is removed before the copy,
+  so files the build no longer produces disappear from the host. This is what keeps a
+  hash-named bundle directory from accumulating every past build's output.
+- The one exception is `dest: '.'`, which names the bind-mount root — the package directory
+  itself. That is never removed, so exporting to `'.'` merges. Export into a named
+  subdirectory when you want replace semantics.
+- Since a directory export deletes first, `EXPORT`-ing `node_modules` will remove whatever the
+  host had there, including a platform-correct install done by hand. That is a good reason not
+  to export `node_modules` from a target you run casually.
 
 ### Exported `node_modules` are Linux binaries
 

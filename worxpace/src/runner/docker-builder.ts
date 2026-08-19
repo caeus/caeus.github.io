@@ -3,14 +3,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 
-const DEFAULT_DOCKERIGNORE = 'node_modules\n.git\n'
-
 export interface BuildResult {
   readonly tag: string
   readonly digest: string
 }
 
-export async function buildDockerImage(dockerfileContent: string, tag: string, contextPath: string): Promise<BuildResult> {
+export async function buildDockerImage(dockerfileContent: string, tag: string, contextPath: string, ignore: readonly string[]): Promise<BuildResult> {
   const base = join(tmpdir(), `worxpace-${Date.now()}-${Math.random().toString(36).slice(2)}`)
   const dockerfilePath = `${base}.Dockerfile`
   const dockerignorePath = `${dockerfilePath}.dockerignore`
@@ -18,7 +16,7 @@ export async function buildDockerImage(dockerfileContent: string, tag: string, c
 
   await Promise.all([
     writeFile(dockerfilePath, dockerfileContent, 'utf-8'),
-    writeFile(dockerignorePath, DEFAULT_DOCKERIGNORE, 'utf-8'),
+    writeFile(dockerignorePath, ignore.map(l => `${l}\n`).join(''), 'utf-8'),
   ])
   try {
     await runCommand('docker', ['buildx', 'build', '--load', '-t', tag, '--iidfile', iidfilePath, '-f', dockerfilePath, contextPath])

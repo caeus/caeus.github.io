@@ -1,4 +1,5 @@
 import { PNPM_VERSION } from 'wx:/lib/versions'
+import { RECOMMENDED_IGNORE } from 'wx:/lib/dockerignore'
 
 export default {
   ci: {
@@ -8,7 +9,8 @@ export default {
         FROM: 'node:22-alpine',
         steps: [
           { RUN: `corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate` },
-        ]
+        ],
+        IGNORE: RECOMMENDED_IGNORE,
       })
     }
   }

@@ -39,6 +39,7 @@ export default {
       run: (_deps) => ({
         FROM: 'node:22-alpine',
         steps: [{ RUN: 'corepack enable && corepack prepare pnpm@11.20.0 --activate' }],
+        IGNORE: ['node_modules', '.git'],
       }),
     },
   },
@@ -126,7 +127,7 @@ are each one small edit away from being different. The most likely ones:
 | --- | --- |
 | A different build-file name | `PACKAGE_FILE` in `src/pkg/loader.ts` |
 | Scan `apps/` as well as `packages/` | the `walk` calls in `loadPackages` |
-| Extra `.dockerignore` entries | `DEFAULT_DOCKERIGNORE` in `src/runner/docker-builder.ts` |
+| Different `.dockerignore` entries | per-target `IGNORE`; no worxpace change needed |
 | A new step kind | the `Step` union in `src/pkg/schema.ts` **and** the switch in `src/runner/dockerfile-renderer.ts` |
 | A new command | a parser in `src/commands/index.ts`, a runner class, one branch in `CompositeCommandRunner` |
 

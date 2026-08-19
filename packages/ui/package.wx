@@ -1,12 +1,11 @@
-import { ciFacet } from 'wx:/stacks/ts-ui'
+import { stack } from 'wx:/stacks/ts-ui'
 
-export default {
-  ci: ciFacet({
-    name: 'ui',
-    scope: 'caeus',
-    outDir: '../../docs',
-    deps: [
-      { local: 'common' },
-    ]
-  })
-}
+export default stack({
+  name: 'ui',
+  scope: 'caeus',
+  version: '0.1.0',
+  outDir: '../../docs',
+  deps: [
+    { local: 'common' },
+  ]
+})

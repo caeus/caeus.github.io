@@ -13,6 +13,7 @@ export default {
       run: (deps) => ({
         FROM: '<image ref>',
         steps: [ /* Step objects */ ],
+        IGNORE: [ /* .dockerignore entries */ ],
         EXPORT: { '<abs path in image>': '<path relative to package dir>' },  // optional
       }),
     },
@@ -25,16 +26,19 @@ Formally (this is the Zod schema in `src/pkg/schema.ts`):
 ```
 PackageDef = Record<string, FacetDef>
 FacetDef   = Record<string, TargetDef>
-TargetDef  = { deps: string[] (default []), run: (deps) => Run }
-Run        = { FROM: string, steps: Step[], EXPORT?: Record<string, string> }
+TargetDef  = { deps: string[], run: (deps) => Run }
+Run        = { FROM: string, steps: Step[], IGNORE: string[], EXPORT?: Record<string, string> }
 ```
 
 Notes on validation:
 
-- `deps` defaults to `[]`, so you may omit it. Being explicit is still clearer.
+- `deps` is required. A target with no dependencies writes `deps: []` — there is no implicit
+  default, so a missing `deps` is a validation failure, not an empty list.
 - `run` must be a function. It is *not* called during loading — only when the target is
   actually built.
 - `steps` is required. Use `steps: []` for a target that only re-tags or re-exports its base.
+- `IGNORE` is required, and `IGNORE: []` means "upload the whole context". Also no default —
+  see [`IGNORE`](#ignore) below.
 - Every `Step` object is `.strict()`: an unknown or misspelled key makes validation fail.
   **A package that fails validation is silently skipped** — see
   [11 — Troubleshooting](11-troubleshooting.md#my-package-doesnt-show-up-in-wx-list).
@@ -76,7 +80,38 @@ package's own directory. For `packages/ui`, `{ COPY: { src: 'src', dest: '/repo/
 copies `packages/ui/src`. You cannot `COPY` a path outside your package — that is Docker's
 rule, not worxpace's.
 
-A baked-in `.dockerignore` excludes `node_modules` and `.git` from every context.
+What the context excludes is controlled by `IGNORE`, described next.
+
+## `IGNORE`
+
+`IGNORE` is the target's `.dockerignore`, as a list of patterns. worxpace writes it verbatim
+alongside the generated Dockerfile — one entry per line — and passes no ignore rules of its own.
+
+```js
+IGNORE: ['node_modules', '.git']
+```
+
+It is **required**, deliberately. Nothing is excluded unless a target says so, which means the
+cost of a large build context is always visible in the target that pays it rather than hidden
+in worxpace. `IGNORE: []` is legal and means "upload everything in the context".
+
+Because it is required and has no default, the sensible pattern is to keep the list in one
+place and import it, rather than repeating literals:
+
+```js
+// lib/dockerignore.wx
+export const RECOMMENDED_IGNORE = ['node_modules', '.git']
+```
+
+```js
+import { RECOMMENDED_IGNORE } from 'wx:/lib/dockerignore'
+
+run: (deps) => ({ FROM: '…', steps: [ … ], IGNORE: RECOMMENDED_IGNORE })
+```
+
+Excluding `node_modules` matters more than it looks. A package whose `install` target exports
+`node_modules` back to the host will otherwise upload that entire tree as build context on
+every subsequent build.
 
 With `from`, `src` is an absolute path inside the referenced image and the context is not
 involved:
@@ -128,6 +163,7 @@ before the expensive install.
 ```js
 import { PNPM_VERSION } from 'wx:/lib/versions'
 import { writeJson, writeText } from 'wx:/lib/file_utils'
+import { RECOMMENDED_IGNORE } from 'wx:/lib/dockerignore'
 
 const TSCONFIG = {
   extends: '@tsconfig/strictest/tsconfig.json',
@@ -154,6 +190,7 @@ export default {
           writeJson('/repo/tsconfig.json', TSCONFIG),
           { RUN: 'pnpm install --prod=false' },
         ],
+        IGNORE: RECOMMENDED_IGNORE,
       }),
     },
     typecheck: {
@@ -165,6 +202,7 @@ export default {
           { WORKDIR: '/repo' },
           { RUN: 'pnpm exec tsc --noEmit' },
         ],
+        IGNORE: RECOMMENDED_IGNORE,
       }),
     },
   },

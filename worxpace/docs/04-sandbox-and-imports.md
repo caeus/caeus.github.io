@@ -59,7 +59,7 @@ The rules:
 ```js
 import versions from 'wx:/lib/versions'                  // default export
 import { writeJson, writeText } from 'wx:/lib/file_utils' // named exports
-import { ciFacet } from 'wx:/stacks/ts-lib'
+import { stack } from 'wx:/stacks/ts-lib'
 ```
 
 Imported `.wx` files are ordinary modules — they can import other `wx:/` modules, and they can
@@ -83,26 +83,25 @@ outer `Map`. Attempting to mutate a target definition from anywhere in worxpace 
 strict mode. This is a guard against the runner accidentally rewriting the graph mid-walk.
 
 Note that freezing applies to the *parsed definition*, not to whatever your `run` function
-constructs at build time — that object is freshly created on each call.
+constructs at build time — that object is freshly created on each call. (//TODO freeze what's returned)
 
-## shared helper modules
+## Shared helper modules
 
 Because `wx:/` paths are root-relative and build files are real JavaScript, the natural way to
 avoid repetition is a directory of helpers that export facet factories:
 
 ```js
 // packages/common/package.wx
-import { ciFacet } from 'wx:/stacks/ts-lib'
+import { stack } from 'wx:/stacks/ts-lib'
 
-export default {
-  ci: ciFacet({
-    name: 'common',
-    scope: 'myorg',
-    deps: [{ remote: 'zod' }],
-  }),
-}
+export default stack({
+  name: 'common',
+  scope: 'myorg',
+  version: '0.1.0',
+  deps: [{ remote: 'zod' }],
+})
 ```
 
-`ciFacet` returns the whole `{ install, build, pack, typecheck }` record. Each package's
+`stack` returns every facet the package needs — `config`, `ci`, and `dev`. Each package's
 `package.wx` becomes a few lines of declaration, and the actual build logic lives in one place.
 See [07 — Conventions and layout](07-conventions-and-layout.md#the-libstacks-pattern).

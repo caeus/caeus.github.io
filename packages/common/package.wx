@@ -1,13 +1,12 @@
-import { ciFacet } from 'wx:/stacks/ts-lib'
+import { stack } from 'wx:/stacks/ts-lib'
 
-export default {
-  ci: ciFacet({
-    name: 'common',
-    scope: 'caeus',
-    deps: [
-      { remote: '@orpc/contract' },
-      { remote: '@orpc/zod' },
-      { remote: 'zod' },
-    ]
-  })
-}
+export default stack({
+  name: 'common',
+  scope: 'caeus',
+  version: '0.1.0',
+  deps: [
+    { remote: '@orpc/contract' },
+    { remote: '@orpc/zod' },
+    { remote: 'zod' },
+  ]
+})

@@ -5,7 +5,7 @@ import type { FQT, TaskResult } from './index.js'
 
 export interface TargetRunnerDeps {
   renderDockerfile(run: ReturnType<TargetDef['run']>): string
-  buildDockerImage(content: string, tag: string, context: string): Promise<BuildResult>
+  buildDockerImage(content: string, tag: string, context: string, ignore: readonly string[]): Promise<BuildResult>
 }
 
 export async function runTarget(fqt: FQT, target: TargetDef, depResults: TaskResult[], root: string, deps: TargetRunnerDeps): Promise<TaskResult> {
@@ -18,7 +18,7 @@ export async function runTarget(fqt: FQT, target: TargetDef, depResults: TaskRes
 
   const runDef = target.run(depsMap)
   const dockerfileContent = deps.renderDockerfile(runDef)
-  const { tag: imageTag, digest: imageDigest } = await deps.buildDockerImage(dockerfileContent, tag, packageDir)
+  const { tag: imageTag, digest: imageDigest } = await deps.buildDockerImage(dockerfileContent, tag, packageDir, runDef.IGNORE)
 
   return runDef.EXPORT
     ? { fqt, imageTag, imageDigest, export: runDef.EXPORT }

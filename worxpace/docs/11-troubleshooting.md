@@ -12,6 +12,9 @@ Causes, roughly in order of likelihood:
 - **A misspelled or unknown key in a `Step`.** Every step variant is `.strict()`, so
   `{ RUNN: '...' }`, `{ WORKIDR: '...' }`, or `{ COPY: { src, dst } }` (should be `dest`)
   fails validation. One bad step invalidates the entire package.
+- **A missing `IGNORE` or `deps`.** Both are required on every target and neither has a
+  default, so a `Run` without `IGNORE` — easy to forget when hand-writing a target — takes the
+  whole package down with it.
 - **`run` is not a function.** `run: { FROM: ..., steps: [] }` — a common slip — fails the
   `z.custom<RunFn>` check.
 - **A helper returned `undefined`.** If a factory in `stacks/` forgets a `return`, or a
@@ -112,8 +115,9 @@ Three possibilities, in order:
 
 1. **You didn't invoke that target directly.** Only the target named on the command line
    materializes its `EXPORT`; transitive deps do not. Run the target itself.
-2. **The image has no shell.** Extraction runs `sh -c 'mkdir -p ... && cp -r ...'` inside the
-   image. `scratch` and distroless images cannot be exported from.
+2. **The image has no shell.** Extraction runs `sh -c 'if [ -d … ] … cp …'` inside the image,
+   so it needs `sh`, `mkdir`, `cp`, and `dirname`. `scratch` and distroless images cannot be
+   exported from.
 3. **The bind mount resolved to the wrong filesystem.** Extraction mounts a *host* path,
    because the daemon resolves `-v`. If `HOST_REPO_ROOT` is wrong — or the daemon is genuinely
    remote — the copy succeeds into a directory you cannot see, with no error. See

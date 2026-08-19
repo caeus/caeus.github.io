@@ -1,13 +1,12 @@
-import { ciFacet } from 'wx:/stacks/ts-executable'
+import { stack } from 'wx:/stacks/ts-executable'
 
-export default {
-  ci: ciFacet({
-    name: 'app',
-    scope: 'caeus',
-    deps: [
-      { local: 'common' },
-      { remote: '@orpc/server' },
-      { remote: 'wyr-ts' },
-    ]
-  })
-}
+export default stack({
+  name: 'app',
+  scope: 'caeus',
+  version: '0.1.0',
+  deps: [
+    { local: 'common' },
+    { remote: '@orpc/server' },
+    { remote: 'wyr-ts' },
+  ]
+})

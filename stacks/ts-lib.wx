@@ -1,6 +1,7 @@
 import versions from 'wx:/lib/versions'
 import { buildPackageJson, pnpmfile } from 'wx:/stacks/utils'
 import { writeJson, writeText } from 'wx:/lib/file_utils'
+import { RECOMMENDED_IGNORE } from 'wx:/lib/dockerignore'
 
 const CORE_DEV_DEPS = ['@tsconfig/strictest', 'typescript']
 
@@ -26,11 +27,15 @@ const PRETTIERRC = {
   trailingComma: 'none',
 }
 
-export function ciFacet({ name, scope, deps = [] }) {
+const BASE = 'packages/base#ci#node-pnpm'
+
+const MANIFESTS = ['package.json', 'tsconfig.json', '.prettierrc.json']
+
+export function stack({ name, scope, version, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
   const packageJson = buildPackageJson({
-    name, scope, deps, coreDevDeps: CORE_DEV_DEPS, versions,
+    name, scope, version, deps, coreDevDeps: CORE_DEV_DEPS, versions,
     extra: {
       main: './dist/index.js',
       types: './dist/index.d.ts',
@@ -39,58 +44,84 @@ export function ciFacet({ name, scope, deps = [] }) {
     }
   })
 
-  const BASE = 'packages/base#ci#node-pnpm'
-
   return {
-    install: {
-      deps: [...packTargets, BASE],
-      run: (deps) => ({
-        FROM: deps[BASE],
-        steps: [
-          ...localDeps.map(d => ({
-            COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
-          })),
-          { WORKDIR: '/repo' },
-          writeJson('/repo/package.json', packageJson),
-          writeJson('/repo/tsconfig.json', TSCONFIG),
-          writeJson('/repo/.prettierrc.json', PRETTIERRC),
-          writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
-          { RUN: 'pnpm install --prod=false' },
-        ],
-        EXPORT: { '/repo/node_modules': 'node_modules' },
-      })
+    config: {
+      manifest: {
+        deps: [BASE],
+        run: (d) => ({
+          FROM: d[BASE],
+          steps: [
+            { WORKDIR: '/repo' },
+            writeJson('/repo/package.json', packageJson),
+            writeJson('/repo/tsconfig.json', TSCONFIG),
+            writeJson('/repo/.prettierrc.json', PRETTIERRC),
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      }
     },
-    build: {
-      deps: ['install'],
-      run: (deps) => ({
-        FROM: deps['install'],
-        steps: [
-          { COPY: { src: 'src', dest: '/repo/src' } },
-          { WORKDIR: '/repo' },
-          { RUN: 'pnpm exec tsc --outDir dist --declaration --noEmit false' },
-        ]
-      })
+    dev: {
+      sync: {
+        deps: ['config#manifest'],
+        run: (d) => ({
+          FROM: d['config#manifest'],
+          steps: [],
+          IGNORE: RECOMMENDED_IGNORE,
+          EXPORT: Object.fromEntries(MANIFESTS.map(f => [`/repo/${f}`, f])),
+        })
+      }
     },
-    pack: {
-      deps: ['build'],
-      run: (deps) => ({
-        FROM: deps['build'],
-        steps: [
-          { WORKDIR: '/repo' },
-          { RUN: 'pnpm pack --pack-destination /out' },
-        ]
-      })
-    },
-    typecheck: {
-      deps: ['install'],
-      run: (deps) => ({
-        FROM: deps['install'],
-        steps: [
-          { COPY: { src: 'src', dest: '/repo/src' } },
-          { WORKDIR: '/repo' },
-          { RUN: 'pnpm exec tsc --noEmit' },
-        ]
-      })
+    ci: {
+      install: {
+        deps: ['config#manifest', ...packTargets],
+        run: (d) => ({
+          FROM: d['config#manifest'],
+          steps: [
+            ...localDeps.map(dep => ({
+              COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+            })),
+            { WORKDIR: '/repo' },
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
+            { RUN: 'pnpm install --prod=false' },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      },
+      build: {
+        deps: ['install'],
+        run: (d) => ({
+          FROM: d['install'],
+          steps: [
+            { COPY: { src: 'src', dest: '/repo/src' } },
+            { WORKDIR: '/repo' },
+            { RUN: 'pnpm exec tsc --outDir dist --declaration --noEmit false' },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      },
+      pack: {
+        deps: ['build'],
+        run: (d) => ({
+          FROM: d['build'],
+          steps: [
+            { WORKDIR: '/repo' },
+            { RUN: `pnpm pack --pack-destination /out && mv /out/*.tgz /out/${name}.tgz` },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      },
+      typecheck: {
+        deps: ['install'],
+        run: (d) => ({
+          FROM: d['install'],
+          steps: [
+            { COPY: { src: 'src', dest: '/repo/src' } },
+            { WORKDIR: '/repo' },
+            { RUN: 'pnpm exec tsc --noEmit' },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      }
     }
   }
 }

@@ -14,7 +14,7 @@ export interface DockerfileRenderer {
 }
 
 export interface DockerImageBuilder {
-  buildDockerImage(content: string, tag: string, context: string): Promise<BuildResult>
+  buildDockerImage(content: string, tag: string, context: string, ignore: readonly string[]): Promise<BuildResult>
 }
 
 export interface DockerImageExtractor {
@@ -50,7 +50,7 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
       [rootKey, packagesKey, dockerfileRendererKey, dockerImageBuilderKey],
       (root, packages, renderer, builder) => buildRunner(root, packages, {
         renderDockerfile: (r) => renderer.renderDockerfile(r),
-        buildDockerImage: (content, tag, context) => builder.buildDockerImage(content, tag, context),
+        buildDockerImage: (content, tag, context, ignore) => builder.buildDockerImage(content, tag, context, ignore),
       })
     )
     .bind(listCommandRunnerKey).toClass([packagesKey], ListCommandRunner)

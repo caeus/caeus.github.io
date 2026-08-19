@@ -44,6 +44,7 @@ export default {
           { COPY: { src: 'src', dest: '/repo/src' } },
           { RUN: 'node src/index.js > /out/greeting.txt' },
         ],
+        IGNORE: ['node_modules', '.git'],
         EXPORT: { '/out': 'dist' },
       }),
     },

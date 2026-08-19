@@ -1,16 +1,25 @@
 {
   "name": "@caeus/common",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "dependencies": {
-    "@orpc/contract": "1.15.0",
-    "@orpc/zod": "1.15.0",
+    "@orpc/contract": "1.14.14",
+    "@orpc/zod": "1.14.14",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@tsconfig/strictest": "2.0.8",
     "typescript": "6.0.3"
-  },
-  "author": {"name": "Alejandro Navas"}
+  }
 }

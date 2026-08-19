@@ -1,6 +1,7 @@
 import versions from 'wx:/lib/versions'
 import { buildPackageJson, pnpmfile } from 'wx:/stacks/utils'
 import { writeJson, writeYaml, writeText } from 'wx:/lib/file_utils'
+import { RECOMMENDED_IGNORE } from 'wx:/lib/dockerignore'
 
 const CORE_DEPS = [
   '@tailwindcss/vite', '@vitejs/plugin-react',
@@ -55,22 +56,6 @@ module.exports = {
 }
 `
 
-const VITEST_CONFIG = `import { fileURLToPath } from 'node:url'
-import { mergeConfig, defineConfig, configDefaults } from 'vitest/config'
-import viteConfig from './vite.config'
-
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'jsdom',
-      exclude: [...configDefaults.exclude, 'e2e/**'],
-      root: fileURLToPath(new URL('./', import.meta.url))
-    }
-  })
-)
-`
-
 const viteConfig = (outDir) => `import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -88,13 +73,33 @@ export default defineConfig({
 })
 `
 
+const VITEST_CONFIG = `import { fileURLToPath } from 'node:url'
+import { mergeConfig, defineConfig, configDefaults } from 'vitest/config'
+import viteConfig from './vite.config'
+
+export default mergeConfig(
+  viteConfig,
+  defineConfig({
+    test: {
+      environment: 'jsdom',
+      exclude: [...configDefaults.exclude, 'e2e/**'],
+      root: fileURLToPath(new URL('./', import.meta.url))
+    }
+  })
+)
+`
+
 const BASE = 'packages/base#ci#node-pnpm'
 
-export function ciFacet({ name, scope, outDir, deps = [] }) {
+// vitest.config.ts is generated but deliberately not synced to the host: it imports
+// vitest/config, and vitest is in neither CORE_DEV_DEPS nor lib/versions.wx.
+const MANIFESTS = ['package.json', 'tsconfig.json', '.prettierrc.json', '.eslintrc.cjs', 'vite.config.ts']
+
+export function stack({ name, scope, version, outDir, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
   const packageJson = buildPackageJson({
-    name, scope, deps,
+    name, scope, version, deps,
     coreDeps: CORE_DEPS,
     coreDevDeps: CORE_DEV_DEPS,
     extra: { imports: { '#*': './src/*' } },
@@ -102,51 +107,79 @@ export function ciFacet({ name, scope, outDir, deps = [] }) {
   })
 
   return {
-    install: {
-      deps: [...packTargets, BASE],
-      run: (deps) => ({
-        FROM: deps[BASE],
-        steps: [
-          ...localDeps.map(d => ({
-            COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${scope}-${d.local}-0.0.0.tgz`, dest: `/repo/${d.local}.tgz` }
-          })),
-          { WORKDIR: '/repo' },
-          writeJson('/repo/package.json', packageJson),
-          writeJson('/repo/tsconfig.json', TSCONFIG),
-          writeJson('/repo/.prettierrc.json', PRETTIERRC),
-          writeText('/repo/.eslintrc.cjs', ESLINTRC),
-          writeText('/repo/vite.config.ts', viteConfig(outDir)),
-          writeText('/repo/vitest.config.ts', VITEST_CONFIG),
-          writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
-          writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
-          { RUN: 'pnpm install --prod=false' },
-        ],
-        EXPORT: { '/repo/node_modules': 'node_modules' },
-      })
+    config: {
+      manifest: {
+        deps: [BASE],
+        run: (d) => ({
+          FROM: d[BASE],
+          steps: [
+            { WORKDIR: '/repo' },
+            writeJson('/repo/package.json', packageJson),
+            writeJson('/repo/tsconfig.json', TSCONFIG),
+            writeJson('/repo/.prettierrc.json', PRETTIERRC),
+            writeText('/repo/.eslintrc.cjs', ESLINTRC),
+            writeText('/repo/vite.config.ts', viteConfig(outDir)),
+            writeText('/repo/vitest.config.ts', VITEST_CONFIG),
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      }
     },
-    typecheck: {
-      deps: ['install'],
-      run: (deps) => ({
-        FROM: deps['install'],
-        steps: [
-          { COPY: { src: 'src', dest: '/repo/src' } },
-          { WORKDIR: '/repo' },
-          { RUN: 'pnpm exec tsc --noEmit' },
-        ]
-      })
+    dev: {
+      sync: {
+        deps: ['config#manifest'],
+        run: (d) => ({
+          FROM: d['config#manifest'],
+          steps: [],
+          IGNORE: RECOMMENDED_IGNORE,
+          EXPORT: Object.fromEntries(MANIFESTS.map(f => [`/repo/${f}`, f])),
+        })
+      }
     },
-    build: {
-      deps: ['install'],
-      run: (deps) => ({
-        FROM: deps['install'],
-        steps: [
-          { COPY: { src: 'src', dest: '/repo/src' } },
-          { COPY: { src: 'index.html', dest: '/repo/index.html' } },
-          { COPY: { src: 'public', dest: '/repo/public' } },
-          { WORKDIR: '/repo' },
-          { RUN: 'pnpm exec vite build' },
-        ]
-      })
+    ci: {
+      install: {
+        deps: ['config#manifest', ...packTargets],
+        run: (d) => ({
+          FROM: d['config#manifest'],
+          steps: [
+            ...localDeps.map(dep => ({
+              COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+            })),
+            { WORKDIR: '/repo' },
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
+            writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
+            { RUN: 'pnpm install --prod=false' },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+          EXPORT: { '/repo/node_modules': 'node_modules' },
+        })
+      },
+      typecheck: {
+        deps: ['install'],
+        run: (d) => ({
+          FROM: d['install'],
+          steps: [
+            { COPY: { src: 'src', dest: '/repo/src' } },
+            { WORKDIR: '/repo' },
+            { RUN: 'pnpm exec tsc --noEmit' },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      },
+      build: {
+        deps: ['install'],
+        run: (d) => ({
+          FROM: d['install'],
+          steps: [
+            { COPY: { src: 'src', dest: '/repo/src' } },
+            { COPY: { src: 'index.html', dest: '/repo/index.html' } },
+            { COPY: { src: 'public', dest: '/repo/public' } },
+            { WORKDIR: '/repo' },
+            { RUN: 'pnpm exec vite build' },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      }
     }
   }
 }

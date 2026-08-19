@@ -17,17 +17,19 @@ which is which saves time.
   `packages/group/package.wx` also exists) are unreachable. To group packages, leave the
   intermediate directory without a build file — `packages/group/a/package.wx` and
   `packages/group/b/package.wx` both work and are named by their full relative path.
-- **`node_modules` and `.git` are excluded from every build context**, via a baked
-  `.dockerignore`. There is no way to add entries per target.
 - **The build context is the package's own directory** — always, with no option to widen or
   narrow it.
 
 ## Conventions (yours to change)
 
-- **Facet named `ci`.** worxpace attaches no meaning to it. Nothing breaks if you use
-  `build`, `release`, or `default`.
-- **Target names `install` / `build` / `pack` / `typecheck`.** Also arbitrary. The chain
-  `install → build → pack` is a useful shape, not a requirement.
+- **Facet names `config` / `ci` / `dev`.** worxpace attaches no meaning to any of them. Nothing
+  breaks if you use `build`, `release`, or `default`.
+- **Target names `manifest` / `install` / `build` / `pack` / `typecheck` / `sync`.** Also
+  arbitrary. The chain `install → build → pack` is a useful shape, not a requirement.
+- **Excluding `node_modules` and `.git` from the build context.** This is now a recommendation
+  expressed as `IGNORE`, not something worxpace bakes in — see
+  [03 — `IGNORE`](03-authoring-package-wx.md#ignore). Keep the list in `lib/dockerignore.wx` and
+  import it.
 - **A `base` package holding shared base images.** See below.
 - **`lib/` and `stacks/` for shared `.wx` helpers.** See below.
 
@@ -45,7 +47,8 @@ which is which saves time.
 │   └── docs/
 ├── lib/                    # low-level .wx helpers (file writing, version pins)
 │   ├── versions.wx
-│   └── file_utils.wx
+│   ├── file_utils.wx
+│   └── dockerignore.wx
 ├── stacks/                 # .wx facet factories, one per project archetype
 │   ├── ts-lib.wx
 │   ├── ts-ui.wx
@@ -59,8 +62,8 @@ which is which saves time.
 ## The `lib/`+`stacks/` pattern
 
 Writing out `install`/`build`/`typecheck` by hand in every package gets old fast, and it lets
-packages drift. The fix is to put the logic in a shared `.wx` module that returns a whole
-facet.
+packages drift. The fix is to put the logic in a shared `.wx` module that returns **every facet
+a package needs**, so each `package.wx` is one call.
 
 **`lib/`** holds primitives — no knowledge of your project archetypes:
 
@@ -81,31 +84,55 @@ export function writeText(path, content) {
   return { RUN: `echo "${Buffer.from(content).toString('base64')}" | base64 -d > ${path}` }
 }
 export function writeJson(path, value) {
-  return writeText(path, JSON.stringify(value, null, 2))
+  return writeText(path, `${JSON.stringify(value, null, 2)}\n`)
 }
 ```
 
-**`stacks/`** holds one factory per archetype. Each exports a function returning a facet:
+```js
+// lib/dockerignore.wx — the recommendation IGNORE used to hardwire
+export const RECOMMENDED_IGNORE = ['node_modules', '.git']
+```
+
+**`stacks/`** holds one factory per archetype, each returning all of that archetype's facets:
 
 ```js
 // stacks/ts-lib.wx
 import versions from 'wx:/lib/versions'
 import { writeJson } from 'wx:/lib/file_utils'
+import { RECOMMENDED_IGNORE } from 'wx:/lib/dockerignore'
 
 const BASE = 'packages/base#ci#node-pnpm'
+const IGNORE = RECOMMENDED_IGNORE
 
-export function ciFacet({ name, scope, deps = [] }) {
+export function stack({ name, scope, version, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
 
   return {
-    install: {
-      deps: [...packTargets, BASE],
-      run: (d) => ({ FROM: d[BASE], steps: [ /* ... */ ] }),
+    config: {
+      manifest: {
+        deps: [BASE],
+        run: (d) => ({ FROM: d[BASE], steps: [ /* write package.json, tsconfig, … */ ], IGNORE }),
+      },
     },
-    build:     { deps: ['install'], run: (d) => ({ FROM: d['install'], steps: [ /* ... */ ] }) },
-    pack:      { deps: ['build'],   run: (d) => ({ FROM: d['build'],   steps: [ /* ... */ ] }) },
-    typecheck: { deps: ['install'], run: (d) => ({ FROM: d['install'], steps: [ /* ... */ ] }) },
+    dev: {
+      sync: {
+        deps: ['config#manifest'],
+        run: (d) => ({
+          FROM: d['config#manifest'], steps: [], IGNORE,
+          EXPORT: { '/repo/package.json': 'package.json', '/repo/tsconfig.json': 'tsconfig.json' },
+        }),
+      },
+    },
+    ci: {
+      install: {
+        deps: ['config#manifest', ...packTargets],
+        run: (d) => ({ FROM: d['config#manifest'], steps: [ /* pnpmfile, install */ ], IGNORE }),
+      },
+      build:     { deps: ['install'], run: (d) => ({ FROM: d['install'], steps: [ /* … */ ], IGNORE }) },
+      pack:      { deps: ['build'],   run: (d) => ({ FROM: d['build'],   steps: [ /* … */ ], IGNORE }) },
+      typecheck: { deps: ['install'], run: (d) => ({ FROM: d['install'], steps: [ /* … */ ], IGNORE }) },
+    },
   }
 }
 ```
@@ -114,16 +141,31 @@ Each package then declares only what makes it different:
 
 ```js
 // packages/common/package.wx
-import { ciFacet } from 'wx:/stacks/ts-lib'
+import { stack } from 'wx:/stacks/ts-lib'
 
-export default {
-  ci: ciFacet({
-    name: 'common',
-    scope: 'myorg',
-    deps: [{ remote: 'zod' }, { remote: '@orpc/contract' }],
-  }),
-}
+export default stack({
+  name: 'common',
+  scope: 'myorg',
+  version: '0.1.0',
+  deps: [{ remote: 'zod' }, { remote: '@orpc/contract' }],
+})
 ```
+
+### Why `config` is its own facet
+
+`config#manifest` exists so that exactly one target generates a package's manifests, and both
+`ci` and `dev` consume them:
+
+```
+config#manifest    package.json, tsconfig.json, … (cheap, no install)
+   ├── ci#install    + .pnpmfile.cjs + dep tarballs + pnpm install
+   └── dev#sync      EXPORT the manifests to the host
+```
+
+Neither `ci` nor `dev` owns the manifest, so the two can't drift. `dev#sync` gets a
+host-usable manifest purely by *not* adding the container-only `.pnpmfile.cjs` step — the
+generated file already carries plain version ranges. Cross-facet deps like
+`deps: ['config#manifest']` resolve exactly like same-facet ones.
 
 A useful convention inside these factories is tagging deps by kind — `{ remote: 'zod' }` for a
 registry package versus `{ local: 'common' }` for a sibling package — so the factory can turn
@@ -157,18 +199,42 @@ once, shared by the whole repo — and bumping the pnpm version invalidates exac
 
 ## Depending on the local package manager inside a container
 
-The hardest part of containerizing a monorepo build is workspace dependencies:
-`"@myorg/common": "workspace:*"` means nothing inside a container that only has one package.
+The hardest part of containerizing a monorepo build is sibling dependencies: a container holds
+one package, so there is no workspace for the package manager to resolve against.
 
 The pattern that works with worxpace's image-as-artifact model:
 
-1. Give each library a `pack` target that ends with `pnpm pack --pack-destination /out`,
-   producing a tarball in the image.
-2. In the consumer's `install` target, declare a dep on that `pack` target and
-   `COPY --from=` the tarball in.
-3. Rewrite `workspace:*` to `file:./<name>.tgz` before installing. A generated
-   `.pnpmfile.cjs` with a `readPackage` hook does this without touching the `package.json` you
-   generate.
+1. Give each library a `pack` target ending in `pnpm pack --pack-destination /out`, then rename
+   the tarball to drop the version: `mv /out/*.tgz /out/<name>.tgz`. Without the rename, every
+   consumer would have to know the library's *version* to construct the `COPY` path.
+2. In the consumer's `install` target, declare a dep on that `pack` target and `COPY --from=`
+   the tarball in.
+3. Rewrite the sibling dependency to `file:./<name>.tgz` before installing, via a generated
+   `.pnpmfile.cjs` with a `readPackage` hook. The rewrite happens in memory at install time, so
+   the `package.json` on disk is never touched.
 
 The result is a genuine install from a real tarball, so the consumer's image proves the
-library's published artifact actually works.
+library's packaged artifact actually works.
+
+### Keep the manifest portable
+
+It's tempting to write the sibling dependency as `workspace:*`, but that string is meaningless
+to anything outside a pnpm workspace — including the published tarball. A plain satisfies-anything
+range keeps the manifest valid everywhere:
+
+```json
+{ "dependencies": { "@myorg/common": ">=0.0.0" } }
+```
+
+Three things fall out of that choice. The consumer needs no knowledge of the sibling's version,
+so there's no cross-package coupling. The same manifest works in CI (where `.pnpmfile.cjs`
+redirects it to a tarball) and on a developer's host (where a real workspace root links the
+sibling), which is what lets a single `config#manifest` target serve both. And since there's no
+`workspace:` marker to key on, the pnpmfile matches on the package *name* instead:
+
+```js
+if (name.startsWith(`@${scope}/`)) deps[name] = `file:./${name.slice(scope.length + 2)}.tgz`
+```
+
+For host-side resolution to prefer the sibling over the registry, the workspace root needs
+`linkWorkspacePackages: true` — pnpm 10 changed that default to `false`.

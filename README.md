@@ -55,6 +55,7 @@ export default {
           { COPY: { src: 'src', dest: '/repo/src' } },
           { RUN: 'pnpm install' },
         ],
+        IGNORE: ['node_modules', '.git'],  // the target's .dockerignore
         EXPORT: { '/repo/dist': 'dist' },  // image path → path under the package dir
       }),
     },
@@ -71,10 +72,26 @@ primitives in `lib/`. Each package's `package.wx` is a few lines of declaration.
 |---|---|
 | `lib/versions.wx` | Single source of truth for dependency versions |
 | `lib/file_utils.wx` | `writeText`/`writeJson`/`writeYaml` — generate a file as a build step |
-| `stacks/ts-lib.wx` | `ciFacet` for libraries — install, build, pack, typecheck |
-| `stacks/ts-ui.wx` | `ciFacet` for the Vite frontend |
-| `stacks/ts-executable.wx` | `ciFacet` for the Worker |
+| `lib/dockerignore.wx` | `RECOMMENDED_IGNORE`, the default build-context exclusions |
+| `stacks/ts-lib.wx` | `stack` for libraries — config, ci (install/build/pack/typecheck), dev |
+| `stacks/ts-ui.wx` | `stack` for the Vite frontend |
+| `stacks/ts-executable.wx` | `stack` for the Worker |
 | `stacks/utils.wx` | `buildPackageJson`, `pnpmfile` helpers |
+
+Each stack returns three facets: `config` generates the manifests, `ci` installs and builds
+from them, and `dev` syncs them to your host for local work.
+
+### Local development
+
+The containerized `ci#install` produces a Linux `node_modules`, which can't run vite on macOS.
+So local dev generates the manifests and lets your host do the install:
+
+```sh
+wx run .#dev#sync                  # root pnpm-workspace.yaml + package.json
+wx run packages/ui#dev#sync        # per-package manifests
+pnpm install                       # from the repo root — platform-correct binaries
+cd packages/ui && pnpm exec vite
+```
 
 ## Packages
 

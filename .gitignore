@@ -29,7 +29,4 @@ coverage
 
 *.tsbuildinfo
 TODO.md
-
-# moon
-.moon/cache
-.moon/docker
+.vite

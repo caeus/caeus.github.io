@@ -19,94 +19,69 @@ This symlinks `wx` to `~/.local/bin/wx`. Make sure `~/.local/bin` is on your `PA
 ### Commands
 
 ```sh
-wx list                        # list all available targets
-wx run <package>#<facet>#<target>   # run a specific target
+wx list                              # list all available targets
+wx run <package>#<facet>#<target>    # run a specific target
 ```
 
 Examples:
 
 ```sh
-wx run packages/ui#ci#scaffold     # generate config files from templates
 wx run packages/ui#ci#install      # install node_modules (exports to host)
 wx run packages/ui#ci#typecheck    # type-check
 wx run packages/ui#ci#build        # vite production build
+wx run packages/common#ci#pack     # tarball the library for local consumers
 wx run .#ci#deploy                 # build ui and deploy to docs/
 ```
 
-### `project.yml` format
+### `package.wx` format
 
-```yaml
-<facet>:
-  <target>:
-    deps:
-      - <target>                      # same facet
-      - <facet>#<target>              # same package, different facet
-      - <package>#<facet>#<target>    # cross-package
-    run:
-      FROM:
-        image: node:22-alpine        # base image
-        # or:
-        target: install              # use another target's image as base
-      steps:
-        - RUN: pnpm install
-        - COPY:
-            src: package.json
-            dest: /repo/package.json
-        - COPY:
-            from: other-target       # copy from another target's image
-            src: /out/file
-            dest: /repo/file
-        - WORKDIR: /repo
-        - ENV:
-            NODE_ENV: production
-    exports:
-      - /repo/node_modules           # copy directory to host as node_modules/
-      - /out/                        # copy contents of /out to host (trailing slash = flatten)
+A `package.wx` default-exports facets of targets. See
+[03 — Authoring `package.wx`](worxpace/docs/03-authoring-package-wx.md) for the full schema and
+every step kind.
+
+```js
+export default {
+  <facet>: {
+    <target>: {
+      deps: [
+        '<target>',                     // same facet
+        '<facet>#<target>',             // same package, different facet
+        '<package>#<facet>#<target>',   // cross-package
+      ],
+      run: (deps) => ({
+        FROM: deps['<target>'],         // a dep's image tag, or a registry ref
+        steps: [
+          { WORKDIR: '/repo' },
+          { COPY: { src: 'src', dest: '/repo/src' } },
+          { RUN: 'pnpm install' },
+        ],
+        EXPORT: { '/repo/dist': 'dist' },  // image path → path under the package dir
+      }),
+    },
+  },
+}
 ```
 
-### Stacks & templates
+### Shared build logic
 
-The `packages/forge` package contains a template engine ([Eta](https://eta.js.org/)) and stack templates. Each stack is a `FROM scratch` image of template files.
+Rather than repeating targets per package, the facets come from factories in `stacks/`, with
+primitives in `lib/`. Each package's `package.wx` is a few lines of declaration.
 
-| Stack | Target | Contents |
-|---|---|---|
-| `ts-ui` | `packages/forge#ci#ts-ui` | tsconfig, eslintrc, prettierrc, package.json, vite.config.ts, vitest.config.ts |
-| `ts-lib` | `packages/forge#ci#ts-lib` | tsconfig, prettierrc, package.json |
-| `ts-executable` | `packages/forge#ci#ts-executable` | tsconfig, prettierrc, package.json |
-
-Render a stack's templates in a consuming target:
-
-```yaml
-ci:
-  scaffold:
-    deps:
-      - packages/forge#ci#engine
-      - packages/forge#ci#ts-ui
-    run:
-      FROM:
-        image: node:22-alpine
-      steps:
-        - COPY:
-            from: packages/forge#ci#engine
-            src: /forge
-            dest: /forge
-        - COPY:
-            from: packages/forge#ci#ts-ui
-            src: /forge/templates/ts-ui
-            dest: /forge/templates/ts-ui
-        - RUN: 'node /forge/engine.js --template /forge/templates/ts-ui --data ''{"scope":"caeus","name":"mypackage","outDir":"../../docs"}'' --out /out'
-    exports:
-      - /out/
-```
-
-Template variables use Eta syntax: `<%= it.scope %>`, `<%= it.name %>`, etc.
+| Path | Contents |
+|---|---|
+| `lib/versions.wx` | Single source of truth for dependency versions |
+| `lib/file_utils.wx` | `writeText`/`writeJson`/`writeYaml` — generate a file as a build step |
+| `stacks/ts-lib.wx` | `ciFacet` for libraries — install, build, pack, typecheck |
+| `stacks/ts-ui.wx` | `ciFacet` for the Vite frontend |
+| `stacks/ts-executable.wx` | `ciFacet` for the Worker |
+| `stacks/utils.wx` | `buildPackageJson`, `pnpmfile` helpers |
 
 ## Packages
 
 | Package | Stack | Description |
 |---|---|---|
+| `packages/base` | — | Shared `node:22-alpine` + pnpm base image |
 | `packages/common` | ts-lib | Shared contracts and types |
-| `packages/client` | ts-lib | oRPC client |
 | `packages/app` | ts-executable | Cloudflare Worker |
 | `packages/ui` | ts-ui | React/Vite frontend (deployed to `docs/`) |
-| `packages/forge` | — | Template engine + stack templates |
+| `packages/client` | — | oRPC client — not currently in the build graph (no `package.wx`) |

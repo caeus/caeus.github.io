@@ -6,6 +6,6 @@ export default stack({
   version: '0.1.0',
   outDir: '../../docs',
   deps: [
-    { local: 'common' },
+    { local: 'common', kind: 'prod' },
   ]
 })

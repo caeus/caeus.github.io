@@ -5,8 +5,8 @@ export default stack({
   scope: 'caeus',
   version: '0.1.0',
   deps: [
-    { remote: '@orpc/contract' },
-    { remote: '@orpc/zod' },
-    { remote: 'zod' },
+    { remote: '@orpc/contract', kind: 'prod' },
+    { remote: '@orpc/zod', kind: 'prod' },
+    { remote: 'zod', kind: 'prod' },
   ]
 })

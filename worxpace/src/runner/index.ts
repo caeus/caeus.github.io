@@ -1,4 +1,4 @@
-import type { PackageDef } from '../pkg/schema.js'
+import type { PackageDef, RunContext } from '../pkg/schema.js'
 import { runTarget, type TargetRunnerDeps } from './target-runner.js'
 
 export class FQT {
@@ -43,7 +43,7 @@ export type Runner = (fqt: FQT) => Promise<TargetResult>
 
 export { type TargetRunnerDeps }
 
-export function buildRunner(root: string, packages: ReadonlyMap<string, PackageDef>, deps: TargetRunnerDeps): Runner {
+export function buildRunner(root: string, packages: ReadonlyMap<string, PackageDef>, deps: TargetRunnerDeps, ctx: RunContext): Runner {
   const memo = new Map<string, Promise<TargetResult>>()
 
   const run = (raw: string, trace: readonly string[] = []): Promise<TargetResult> => {
@@ -61,7 +61,7 @@ export function buildRunner(root: string, packages: ReadonlyMap<string, PackageD
     const nextTrace = [...trace, raw]
     const promise = Promise.all(
       target.deps.map(d => run(FQT.parse(d, { pkg: fqt.pkg, facet: fqt.facet }).toString(), nextTrace))
-    ).then(depResults => runTarget(fqt, target, depResults, root, deps))
+    ).then(depResults => runTarget(fqt, target, depResults, root, deps, ctx))
 
     memo.set(raw, promise)
     return promise

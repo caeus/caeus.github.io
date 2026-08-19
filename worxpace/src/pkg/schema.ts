@@ -44,7 +44,21 @@ export const Run = z
   });
 export interface Run extends z.infer<typeof Run> {}
 
-export type RunFn = (deps: Readonly<Record<string, string>>) => Run;
+export interface HostPlatform {
+  readonly os: string;
+  readonly arch: string;
+  // Linux-only concept; absent elsewhere rather than defaulted.
+  readonly libc?: "glibc" | "musl";
+}
+
+export interface RunContext {
+  readonly host: HostPlatform;
+}
+
+export type RunFn = (
+  deps: Readonly<Record<string, string>>,
+  ctx: RunContext,
+) => Run;
 
 export const TargetDef = z
   .object({

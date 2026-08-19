@@ -134,6 +134,25 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
           IGNORE: RECOMMENDED_IGNORE,
           EXPORT: Object.fromEntries(MANIFESTS.map(f => [`/repo/${f}`, f])),
         })
+      },
+      // Installs for the *host* platform rather than the container's, so the exported tree has
+      // usable native binaries. Local deps come from tarballs, so they arrive built.
+      install: {
+        deps: ['config#manifest', ...packTargets],
+        run: (d, ctx) => ({
+          FROM: d['config#manifest'],
+          steps: [
+            ...localDeps.map(dep => ({
+              COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+            })),
+            { WORKDIR: '/repo' },
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
+            writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
+            { RUN: `pnpm install --prod=false --os ${ctx.host.os} --cpu ${ctx.host.arch}` },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+          EXPORT: { '/repo/node_modules': 'node_modules' },
+        })
       }
     },
     ci: {

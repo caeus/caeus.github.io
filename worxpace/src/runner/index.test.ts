@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { FQT, buildRunner } from './index.js'
 import type { TargetRunnerDeps } from './index.js'
 import type { BuildResult } from './docker-builder.js'
-import type { PackageDef } from '../pkg/schema.js'
+import type { PackageDef, RunContext } from '../pkg/schema.js'
 
 describe('FQT.parse', () => {
   it('parses fully qualified package#facet#target', () => {
@@ -42,6 +42,8 @@ describe('buildRunner', () => {
   const stubBuild = async (_content: string, tag: string): Promise<BuildResult> =>
     ({ tag, digest: `sha256:${tag}` })
 
+  const stubCtx: RunContext = { host: { os: 'linux', arch: 'arm64', libc: 'musl' } }
+
   const stubDeps: TargetRunnerDeps = {
     renderDockerfile: () => 'FROM scratch\n',
     buildDockerImage: stubBuild,
@@ -56,7 +58,7 @@ describe('buildRunner', () => {
     }]])
 
   it('runs a target with no deps', async () => {
-    const runner = buildRunner('/', makePackage(), stubDeps)
+    const runner = buildRunner('/', makePackage(), stubDeps, stubCtx)
     const result = await runner(FQT.parse('pkg#ci#a'))
     assert.equal(result.fqt.toString(), 'pkg#ci#a')
     assert.equal(result.imageTag, 'pkg-ci-a')
@@ -68,7 +70,7 @@ describe('buildRunner', () => {
       ...stubDeps,
       buildDockerImage: async (_c, tag) => { calls++; return { tag, digest: `sha256:${tag}` } },
     }
-    const runner = buildRunner('/', makePackage(), countingDeps)
+    const runner = buildRunner('/', makePackage(), countingDeps, stubCtx)
     await Promise.all([runner(FQT.parse('pkg#ci#a')), runner(FQT.parse('pkg#ci#a'))])
     assert.equal(calls, 1)
   })
@@ -79,7 +81,7 @@ describe('buildRunner', () => {
       ...stubDeps,
       buildDockerImage: async (_c, tag) => { order.push(tag); return { tag, digest: `sha256:${tag}` } },
     }
-    const runner = buildRunner('/', makePackage(), orderDeps)
+    const runner = buildRunner('/', makePackage(), orderDeps, stubCtx)
     await runner(FQT.parse('pkg#ci#b'))
     assert.equal(order[0], 'pkg-ci-a')
     assert.equal(order[1], 'pkg-ci-b')
@@ -93,13 +95,13 @@ describe('buildRunner', () => {
         b: { deps: ['a'], run: (d) => { receivedDeps = {...d}; return { FROM: d['a']!, steps: [], IGNORE: [] } } },
       }
     }]])
-    const runner = buildRunner('/', packages, stubDeps)
+    const runner = buildRunner('/', packages, stubDeps, stubCtx)
     await runner(FQT.parse('pkg#ci#b'))
     assert.ok('a' in receivedDeps)
   })
 
   it('throws on unknown target', async () => {
-    const runner = buildRunner('/', makePackage(), stubDeps)
+    const runner = buildRunner('/', makePackage(), stubDeps, stubCtx)
     await assert.rejects(() => Promise.resolve().then(() => runner(FQT.parse('pkg#ci#missing'))), /Unknown target/)
   })
 
@@ -110,7 +112,7 @@ describe('buildRunner', () => {
         b: { deps: ['a'], run: (_d) => ({ FROM: 'alpine', steps: [], IGNORE: [] }) },
       }
     }]])
-    const runner = buildRunner('/', circular, stubDeps)
+    const runner = buildRunner('/', circular, stubDeps, stubCtx)
     await assert.rejects(() => Promise.resolve().then(() => runner(FQT.parse('pkg#ci#a'))), /Circular dependency/)
   })
 })

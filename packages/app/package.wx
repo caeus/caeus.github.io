@@ -5,8 +5,8 @@ export default stack({
   scope: 'caeus',
   version: '0.1.0',
   deps: [
-    { local: 'common' },
-    { remote: '@orpc/server' },
-    { remote: 'wyr-ts' },
+    { local: 'common', kind: 'prod' },
+    { remote: '@orpc/server', kind: 'prod' },
+    { remote: 'wyr-ts', kind: 'prod' },
   ]
 })

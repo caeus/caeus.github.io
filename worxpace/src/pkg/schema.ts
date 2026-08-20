@@ -11,7 +11,6 @@ export const Step = z.union([
   z.object({ COPY: Copy }).strict().readonly(),
   z.object({ WORKDIR: z.string() }).strict().readonly(),
   z.object({ ENV: z.record(z.string(), z.string()).readonly() }).strict().readonly(),
-  z.object({ ARG: z.string() }).strict().readonly(),
   z.object({ ENTRYPOINT: z.array(z.string()).readonly() }).strict().readonly(),
   z.object({ CMD: z.array(z.string()).readonly() }).strict().readonly(),
 ]);

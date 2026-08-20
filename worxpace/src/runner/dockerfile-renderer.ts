@@ -10,7 +10,6 @@ export function renderDockerfile({ FROM, steps }: Run): string {
         return [from ? `COPY --from=${from} ${src} ${dest}` : `COPY ${src} ${dest}`]
       }
       if ('WORKDIR' in step) return [`WORKDIR ${step.WORKDIR}`]
-      if ('ARG' in step) return [`ARG ${step.ARG}`]
       if ('ENV' in step) return Object.entries(step.ENV).map(([k, v]) => `ENV ${k}=${v}`)
       if ('ENTRYPOINT' in step) return [`ENTRYPOINT ${JSON.stringify(step.ENTRYPOINT)}`]
       if ('CMD' in step) return [`CMD ${JSON.stringify(step.CMD)}`]

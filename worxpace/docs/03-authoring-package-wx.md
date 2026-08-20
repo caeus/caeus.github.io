@@ -64,7 +64,6 @@ Each step is a single-key object. The table shows the rendered Dockerfile line
 | --- | --- |
 | `{ RUN: 'cmd' }` | `RUN cmd` |
 | `{ WORKDIR: '/repo' }` | `WORKDIR /repo` |
-| `{ ARG: 'NAME' }` | `ARG NAME` |
 | `{ ENV: { A: '1', B: '2' } }` | `ENV A=1` and `ENV B=2` (one line per key) |
 | `{ COPY: { src, dest } }` | `COPY src dest` |
 | `{ COPY: { from, src, dest } }` | `COPY --from=from src dest` |

@@ -47,7 +47,7 @@ logistics
 
 ## Experience
 
-### Senior Software Engineer · AstraZeneca
+### **Senior Software Engineer** · AstraZeneca
 *Aug 2025 – Present · Barcelona, Spain · Hybrid*
 
 - Platform and developer-experience work on a large clinical-research API in a GxP-regulated
@@ -63,13 +63,13 @@ logistics
 - Documents the reasoning behind non-obvious decisions — especially bugs already paid for — so
   hard-won knowledge lives in the codebase rather than in whoever debugged it.
 
-### Senior Software Engineer · Intellias
+### **Senior Software Engineer** · Intellias
 *May 2024 – Aug 2025 · Barcelona, Spain · Hybrid*
 
 - Built and maintained Scala microservices for a major programme at a large multinational bank,
   collecting and aggregating data from diverse sources.
 
-### Chief Software Architect · Foodology
+### **Chief Software Architect** · Foodology
 *Sep 2021 – Jun 2024 · Bogotá, Colombia · Hybrid*
 
 - Gave a cloud-kitchen operator the technical footing to absorb rapid growth, replacing a
@@ -81,7 +81,7 @@ logistics
   distribution of tasks across workflows, so the team could focus on design and implementation
   rather than wiring.
 
-### Senior Software Engineer · Twilio
+### **Senior Software Engineer** · Twilio
 *Mar 2020 – Aug 2021 · Bogotá, Colombia · Remote*
 
 - Integrated local mobile network operators for SMS delivery and traffic, in Scala with ZIO,
@@ -90,7 +90,7 @@ logistics
   VPNs, IPs and DNS records — taking a polyglot approach (Java, Python, JavaScript) and
   distributed solutions to accommodate the internal configuration protocols of varied hardware.
 
-### Software Architect · Kiwibot
+### **Software Architect** · Kiwibot
 *Jun 2019 – Feb 2020 · Bogotá, Colombia · Hybrid*
 
 - Bot-based food delivery running on an unpredictable monolith that needed urgent attention. Led
@@ -98,41 +98,43 @@ logistics
 - Transitioned to a distributed architecture with an emphasis on developer experience, so the
   team could refine the codebase instead of constantly firefighting.
 
----
+### **Senior Software Engineer** · NewMotion
+*Jun 2018 – Mar 2019 · Amsterdam, Netherlands · On-site*
 
-## Earlier
+- Services aggregating real-time data from EV charging points for B2B clients. Deepened
+  Domain-Driven Design practice alongside leads and architects.
 
-**Senior Software Engineer** · NewMotion · Amsterdam · Jun 2018 – Mar 2019
+### **Software Engineer** · Lunatech Labs
+*Sep 2017 – May 2018 · Rotterdam, Netherlands · On-site*
 
-Services aggregating real-time data from EV charging points for B2B clients. Deepened
-Domain-Driven Design practice alongside leads and architects.
+- At **Audi**, real-time IoT event processing for smart cars in Scala. At **ING Bank**, moved the
+  identity and authorisation system off ageing Java onto Kotlin.
 
-**Software Engineer** · Lunatech Labs · Rotterdam · Sep 2017 – May 2018
+### **Software Architect** · Undertrail / GDX Travel
+*Sep 2015 – Aug 2017 · Bogotá, Colombia · On-site*
 
-At **Audi**, real-time IoT event processing for smart cars in Scala. At **ING Bank**, moved the
-identity and authorisation system off ageing Java onto Kotlin.
+- Led the two-year transition of a low-cost travel ticket aggregator from a struggling prototype
+  to a distributed Scala system handling hundreds of compute-intensive searches per minute. Built
+  the payment-gateway integration and lifecycle tracing, the real-time pricing rules engine, and
+  an automated ticket-purchasing module that cut payroll costs while improving accuracy.
 
-**Software Architect** · Undertrail / GDX Travel · Bogotá · Sep 2015 – Aug 2017
+### **CTO & Founder** · Kiido
+*Jan 2014 – Aug 2015 · Bogotá, Colombia · Hybrid*
 
-Led the two-year transition of a low-cost travel ticket aggregator from a struggling prototype
-to a distributed Scala system handling hundreds of compute-intensive searches per minute. Built
-the payment-gateway integration and lifecycle tracing, the real-time pricing rules engine, and
-an automated ticket-purchasing module that cut payroll costs while improving accuracy.
+- Backend services, mobile apps and CI/CD automation across the full lifecycle, pivoting to suit
+  each stage of the startup's growth.
 
-**CTO & Founder** · Kiido · Bogotá · Jan 2014 – Aug 2015
+### **Full Stack Developer** · Innerconsulting
+*Mar 2012 – Dec 2013 · Bogotá, Colombia · On-site*
 
-Backend services, mobile apps and CI/CD automation across the full lifecycle, pivoting to suit
-each stage of the startup's growth.
+- Single-handedly built a financial tracking system for Panama's central social security
+  institution.
 
-**Full Stack Developer** · Innerconsulting · Bogotá · Mar 2012 – Dec 2013
+### **Full Stack Developer** · Heinsohn Software House
+*Feb 2011 – May 2011 · Bogotá, Colombia · On-site*
 
-Single-handedly built a financial tracking system for Panama's central social security
-institution.
-
-**Full Stack Developer** · Heinsohn Software House · Bogotá · Feb 2011 – May 2011
-
-Payroll software, including a SQL dialect translator built with JavaCC so the company could
-migrate between database vendors.
+- Payroll software, including a SQL dialect translator built with JavaCC so the company could
+  migrate between database vendors.
 
 ---
 

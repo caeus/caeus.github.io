@@ -16,6 +16,8 @@ const CORE_DEV_DEPS = [
   '@tsconfig/strictest', '@types/node', '@types/react', '@types/react-dom',
   '@typescript-eslint/eslint-plugin', '@typescript-eslint/parser',
   'eslint', 'prettier', 'typescript', 'vite',
+  // vitest.config.ts imports vitest/config, and its jsdom environment is a separate package.
+  'vitest', 'jsdom',
 ]
 
 const TSCONFIG = {
@@ -91,9 +93,10 @@ export default mergeConfig(
 
 const BASE = 'packages/base#ci#node-pnpm'
 
-// vitest.config.ts is generated but deliberately not synced to the host: it imports
-// vitest/config, and vitest is in neither CORE_DEV_DEPS nor lib/versions.wx.
-const MANIFESTS = ['package.json', 'tsconfig.json', '.prettierrc.json', '.eslintrc.cjs', 'vite.config.ts']
+const MANIFESTS = [
+  'package.json', 'tsconfig.json', '.prettierrc.json',
+  '.eslintrc.cjs', 'vite.config.ts', 'vitest.config.ts',
+]
 
 export function stack({ name, scope, version, outDir, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)

@@ -1,4 +1,5 @@
 import { object, or } from "@optique/core/constructs";
+import { multiple } from "@optique/core/modifiers";
 import { argument, command, constant } from "@optique/core/primitives";
 import { string } from "@optique/core/valueparser";
 import type { InferValue } from "@optique/core/parser";
@@ -7,7 +8,10 @@ import { resolve } from "node:path";
 import type { PackageDef } from "../pkg/schema.js";
 import { FQT, type Runner } from "../runner/index.js";
 import type { DockerImageExtractor } from "../wire.js";
-const runCommand = command('run', object({ command: constant('run'), fqt: argument(string()) }))
+const runCommand = command('run', object({
+  command: constant('run'),
+  fqts: multiple(argument(string()), { min: 1 }),
+}))
 const listCommand = command('list', object({ command: constant('list') }))
 const parser = or(runCommand, listCommand)
 
@@ -68,19 +72,22 @@ export class RunCommandRunner {
     const context = this.currentPackage
       ? { pkg: this.currentPackage }
       : undefined;
-    const fqt = FQT.parse(cmd.fqt, context);
-    const result = await this.runner(fqt);
+    const results = await Promise.all(
+      cmd.fqts.map((raw) => this.runner(FQT.parse(raw, context))),
+    );
 
-    if (result.export) {
-      const packageDir = resolve(this.root, result.fqt.pkg);
-      await this.extractor.extractFromImage(
-        result.imageTag,
-        result.export,
-        packageDir,
-      );
+    for (const result of results) {
+      if (result.export) {
+        const packageDir = resolve(this.root, result.fqt.pkg);
+        await this.extractor.extractFromImage(
+          result.imageTag,
+          result.export,
+          packageDir,
+        );
+      }
+
+      console.log(`Done: ${result.fqt} (${result.imageTag})`);
     }
-
-    console.log(`Done: ${result.fqt} (${result.imageTag})`);
   }
 }
 

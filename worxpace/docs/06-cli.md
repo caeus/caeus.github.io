@@ -1,21 +1,23 @@
 # CLI reference
 
 ```
-wx run <fqt>
+wx run <fqt> [<fqt>...]
 wx list
 ```
 
 Argument parsing uses [`@optique`](https://github.com/dahlia/optique), so `--help` is
 available and unknown arguments produce a usage error rather than being ignored.
 
-## `wx run <fqt>`
+## `wx run <fqt> [<fqt>...]`
 
-Builds the target and every transitive dependency, then materializes the target's own
-`EXPORT` map if it has one.
+Builds one or more targets and every transitive dependency, then materializes each target's
+own `EXPORT` map if it has one. Requested targets run concurrently and share one dependency
+cache, so a common dependency builds only once.
 
 ```sh
 wx run packages/ui#ci#build
 wx run ci#build          # package inferred from cwd
+wx run packages/common#ci#test packages/ui#ci#test
 ```
 
 The FQT may omit the package segment, which is then taken from your working directory. The

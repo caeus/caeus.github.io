@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@caeus/wyr':
+        specifier: 0.0.0-rc1
+        version: 0.0.0-rc1
       '@optique/core':
         specifier: 1.2.0
         version: 1.2.0
@@ -32,6 +35,9 @@ importers:
         version: 6.0.3
 
 packages:
+
+  '@caeus/wyr@0.0.0-rc1':
+    resolution: {integrity: sha512-uDEpjJv7Jh+L9cC65kf8aPlszvIXvguAiGr3ozC1MjfmlbpJo87v0M0UPfh7PchXDuUVrjYgzj85yVNgQnxonw==}
 
   '@esbuild/aix-ppc64@0.28.1':
     resolution: {integrity: sha512-Svl7tq8k/08+p6CXPpRjQ1fKX+1odH/BQbb48fV6fj3CWHhsoIOoY87w1oHXm0qEpkIK3ZfVgp0hed3XBXzXMQ==}
@@ -230,6 +236,8 @@ packages:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
+
+  '@caeus/wyr@0.0.0-rc1': {}
 
   '@esbuild/aix-ppc64@0.28.1':
     optional: true

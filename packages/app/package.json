@@ -2,10 +2,13 @@
   "name": "@caeus/app",
   "version": "0.1.0",
   "type": "module",
+  "imports": {
+    "#*": "./src/*"
+  },
   "dependencies": {
     "@caeus/common": ">=0.0.0",
     "@orpc/server": "1.14.14",
-    "wyr-ts": "2.0.2-rc1"
+    "@caeus/wyr": "0.0.0-rc1"
   },
   "devDependencies": {
     "@tsconfig/strictest": "2.0.8",

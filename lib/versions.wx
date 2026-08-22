@@ -2,6 +2,7 @@ export const PNPM_VERSION = '11.20.0'
 
 export default {
   '@cloudflare/workers-types': '4.20250620.0',
+  '@caeus/wyr': '0.0.0-rc1',
   '@orpc/client': '1.14.14',
   '@orpc/contract': '1.14.14',
   '@orpc/server': '1.14.14',
@@ -31,6 +32,5 @@ export default {
   // vitest 4 requires vite >=6; 3.x is the newest line that accepts vite 5.
   'vitest': '3.2.7',
   'wrangler': '4.0.0',
-  'wyr-ts': '2.0.2-rc1',
   'zod': '4.4.3',
 }

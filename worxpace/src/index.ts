@@ -1,3 +1,3 @@
-import { main } from './wire.js'
+import { wire } from './wire.js'
 
-main(process.argv.slice(2), process.env).catch(console.error)
+wire().catch(console.error)

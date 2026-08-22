@@ -1,9 +1,11 @@
-export const pnpmfile = (scope) => `function readPackage(pkg) {
+export const pnpmfile = (scope, localDeps) => `const localPackages = new Set(${JSON.stringify(localDeps.map(dep => `@${scope}/${dep.local}`))})
+
+function readPackage(pkg) {
   for (const depField of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
     const deps = pkg[depField]
     if (!deps) continue
     for (const name of Object.keys(deps)) {
-      if (name.startsWith('@${scope}/')) {
+      if (localPackages.has(name)) {
         const tarball = name.slice('@${scope}/'.length).replace(/\\//g, '-')
         deps[name] = \`file:./\${tarball}.tgz\`
       }

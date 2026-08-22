@@ -79,7 +79,7 @@ export function stack({ name, scope, version, deps = [] }) {
               COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
             })),
             { WORKDIR: '/repo' },
-            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),
             writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true, sharp: true, workerd: true } }),
             { RUN: 'pnpm install --prod=false' },
           ],

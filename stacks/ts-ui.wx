@@ -149,7 +149,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
               COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
             })),
             { WORKDIR: '/repo' },
-            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),
             writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
             { RUN: `pnpm install --prod=false --os ${host.os} --cpu ${host.arch}` },
           ],
@@ -168,7 +168,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
               COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
             })),
             { WORKDIR: '/repo' },
-            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),
             writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
             { RUN: 'pnpm install --prod=false' },
           ],

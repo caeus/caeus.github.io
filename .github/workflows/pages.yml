@@ -3,6 +3,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -20,17 +21,22 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v6
 
       - name: Build
-        run: ./worxpace/cli.sh run .#ci#deploy
+        run: |
+          ./worxpace/cli.sh run .#ci#deploy
+          test -f docs/index.html
 
       - name: Upload GitHub Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
           path: docs
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -42,4 +48,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

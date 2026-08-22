@@ -8,7 +8,7 @@ const CORE_DEPS = [
   'class-variance-authority', 'clsx',
   'react', 'react-dom', 'react-router-dom',
   'tailwind-merge', 'tailwindcss',
-  'wyr-ts', 'zod',
+  '@caeus/wyr', 'zod',
   'react-markdown',
 ]
 

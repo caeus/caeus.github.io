@@ -7,6 +7,6 @@ export default stack({
   deps: [
     { local: 'common', kind: 'prod' },
     { remote: '@orpc/server', kind: 'prod' },
-    { remote: 'wyr-ts', kind: 'prod' },
+    { remote: '@caeus/wyr', kind: 'prod' },
   ]
 })

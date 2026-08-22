@@ -1,5 +1,5 @@
 import { RPCHandler } from '@orpc/server/fetch'
-import { Module, toFactory, toValue } from 'wyr-ts'
+import { Module, toFactory, toValue } from '@caeus/wyr'
 import { os } from '#orpc/index.js'
 import { pingController } from '#controllers/ping.js'
 

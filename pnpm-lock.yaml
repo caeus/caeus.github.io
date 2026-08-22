@@ -16,9 +16,9 @@ importers:
       '@orpc/server':
         specifier: 1.14.14
         version: 1.14.14
-      wyr-ts:
-        specifier: 2.0.2-rc1
-        version: 2.0.2-rc1
+      '@caeus/wyr':
+        specifier: 0.0.0-rc1
+        version: 0.0.0-rc1
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 4.20250620.0
@@ -87,9 +87,9 @@ importers:
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
-      wyr-ts:
-        specifier: 2.0.2-rc1
-        version: 2.0.2-rc1
+      '@caeus/wyr':
+        specifier: 0.0.0-rc1
+        version: 0.0.0-rc1
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -2502,8 +2502,8 @@ packages:
       utf-8-validate:
         optional: true
 
-  wyr-ts@2.0.2-rc1:
-    resolution: {integrity: sha512-CQHM67ViLeMD0eZ4SagVnOMCeoehquGaHwWfpvUe/yaQUUZr6aouM+C8M2HFjmuQe0LWYj/RyTagj0D1kDIqEQ==}
+  '@caeus/wyr@0.0.0-rc1':
+    resolution: {integrity: sha512-uDEpjJv7Jh+L9cC65kf8aPlszvIXvguAiGr3ozC1MjfmlbpJo87v0M0UPfh7PchXDuUVrjYgzj85yVNgQnxonw==}
 
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
@@ -4942,7 +4942,7 @@ snapshots:
 
   ws@8.18.0: {}
 
-  wyr-ts@2.0.2-rc1: {}
+  '@caeus/wyr@0.0.0-rc1': {}
 
   xml-name-validator@5.0.0: {}
 

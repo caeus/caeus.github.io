@@ -1,0 +1,40 @@
+name: Pull request checks
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  worxpace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build Worxpace
+        run: docker build -t worxpace-check ./worxpace
+
+      - name: Test Worxpace
+        run: docker run --rm --entrypoint pnpm worxpace-check test
+
+  targets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run test targets
+        shell: bash
+        run: |
+          ./worxpace/cli.sh list > /tmp/worxpace-targets.txt
+          mapfile -t targets < <(
+            awk -F'[' '$1 ~ /^[^#]+#[^#]+#test$/ { print $1 }' /tmp/worxpace-targets.txt
+          )
+
+          printf 'Found %d test target(s)\n' "${#targets[@]}"
+          for target in "${targets[@]}"; do
+            echo "Running $target"
+            ./worxpace/cli.sh run "$target"
+          done

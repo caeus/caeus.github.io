@@ -27,16 +27,16 @@ Dockerfile and builds it. The resulting image *is* the output. There is no `dist
 on your host unless you explicitly ask for one via `EXPORT`.
 
 Dependencies are image references. When target `B` depends on target `A`, `B`'s `run`
-function is handed a map from dep name to **`A`'s image tag**, and `B` decides how to use it:
+function receives `ctx.images`, a map from dep name to **`A`'s image tag**, and `B` decides how to use it:
 
 ```js
 // continue from where A left off — B's layers stack on A's
-run: (deps) => ({ FROM: deps['a'], steps: [...] })
+run: ({ images }) => ({ FROM: images['a'], steps: [...] })
 
 // or cherry-pick files out of A into a different base
-run: (deps) => ({
+run: ({ images }) => ({
   FROM: 'node:22-alpine',
-  steps: [{ COPY: { from: deps['a'], src: '/out/thing.tgz', dest: '/thing.tgz' } }],
+  steps: [{ COPY: { from: images['a'], src: '/out/thing.tgz', dest: '/thing.tgz' } }],
 })
 ```
 

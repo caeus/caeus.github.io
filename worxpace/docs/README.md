@@ -37,7 +37,7 @@ export default {
   ci: {
     build: {
       deps: [],
-      run: (_deps) => ({
+      run: () => ({
         FROM: 'node:22-alpine',
         steps: [
           { WORKDIR: '/repo' },

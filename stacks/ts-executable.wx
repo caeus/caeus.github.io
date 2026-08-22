@@ -41,7 +41,7 @@ export function stack({ name, scope, version, deps = [] }) {
     config: {
       manifest: {
         deps: [BASE],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d[BASE],
           steps: [
             { WORKDIR: '/repo' },
@@ -56,7 +56,7 @@ export function stack({ name, scope, version, deps = [] }) {
     dev: {
       sync: {
         deps: ['config#manifest'],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d['config#manifest'],
           steps: [],
           IGNORE: RECOMMENDED_IGNORE,
@@ -67,7 +67,7 @@ export function stack({ name, scope, version, deps = [] }) {
     ci: {
       install: {
         deps: ['config#manifest', ...packTargets],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d['config#manifest'],
           steps: [
             ...localDeps.map(dep => ({
@@ -84,7 +84,7 @@ export function stack({ name, scope, version, deps = [] }) {
       },
       typecheck: {
         deps: ['install'],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d['install'],
           steps: [
             { COPY: { src: 'src', dest: '/repo/src' } },

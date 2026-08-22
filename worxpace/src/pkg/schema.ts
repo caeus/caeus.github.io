@@ -51,13 +51,11 @@ export interface HostPlatform {
 }
 
 export interface RunContext {
+  readonly images: Readonly<Record<string, string>>;
   readonly host: HostPlatform;
 }
 
-export type RunFn = (
-  deps: Readonly<Record<string, string>>,
-  ctx: RunContext,
-) => Run;
+export type RunFn = (ctx: RunContext) => Run;
 
 export const TargetDef = z
   .object({

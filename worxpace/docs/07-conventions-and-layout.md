@@ -112,14 +112,14 @@ export function stack({ name, scope, version, deps = [] }) {
     config: {
       manifest: {
         deps: [BASE],
-        run: (d) => ({ FROM: d[BASE], steps: [ /* write package.json, tsconfig, … */ ], IGNORE }),
+        run: ({ images }) => ({ FROM: images[BASE], steps: [ /* write package.json, tsconfig, … */ ], IGNORE }),
       },
     },
     dev: {
       sync: {
         deps: ['config#manifest'],
-        run: (d) => ({
-          FROM: d['config#manifest'], steps: [], IGNORE,
+        run: ({ images }) => ({
+          FROM: images['config#manifest'], steps: [], IGNORE,
           EXPORT: { '/repo/package.json': 'package.json', '/repo/tsconfig.json': 'tsconfig.json' },
         }),
       },
@@ -127,11 +127,11 @@ export function stack({ name, scope, version, deps = [] }) {
     ci: {
       install: {
         deps: ['config#manifest', ...packTargets],
-        run: (d) => ({ FROM: d['config#manifest'], steps: [ /* pnpmfile, install */ ], IGNORE }),
+        run: ({ images }) => ({ FROM: images['config#manifest'], steps: [ /* pnpmfile, install */ ], IGNORE }),
       },
-      build:     { deps: ['install'], run: (d) => ({ FROM: d['install'], steps: [ /* … */ ], IGNORE }) },
-      pack:      { deps: ['build'],   run: (d) => ({ FROM: d['build'],   steps: [ /* … */ ], IGNORE }) },
-      typecheck: { deps: ['install'], run: (d) => ({ FROM: d['install'], steps: [ /* … */ ], IGNORE }) },
+      build:     { deps: ['install'], run: ({ images }) => ({ FROM: images['install'], steps: [ /* … */ ], IGNORE }) },
+      pack:      { deps: ['build'],   run: ({ images }) => ({ FROM: images['build'],   steps: [ /* … */ ], IGNORE }) },
+      typecheck: { deps: ['install'], run: ({ images }) => ({ FROM: images['install'], steps: [ /* … */ ], IGNORE }) },
     },
   }
 }
@@ -185,7 +185,7 @@ export default {
   ci: {
     'node-pnpm': {
       deps: [],
-      run: (_deps) => ({
+      run: () => ({
         FROM: 'node:22-alpine',
         steps: [{ RUN: `corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate` }],
       }),
@@ -194,7 +194,7 @@ export default {
 }
 ```
 
-Then every install target uses `FROM: deps['packages/base#ci#node-pnpm']`. One image, built
+Then every install target uses `FROM: images['packages/base#ci#node-pnpm']`. One image, built
 once, shared by the whole repo — and bumping the pnpm version invalidates exactly one layer.
 
 ## Depending on the local package manager inside a container

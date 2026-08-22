@@ -36,7 +36,7 @@ export default {
   ci: {
     'node-pnpm': {
       deps: [],
-      run: (_deps) => ({
+      run: () => ({
         FROM: 'node:22-alpine',
         steps: [{ RUN: 'corepack enable && corepack prepare pnpm@11.20.0 --activate' }],
         IGNORE: ['node_modules', '.git'],

@@ -46,23 +46,23 @@ wx run .#ci#deploy            # ✓
 wx run ci#deploy              # ✗ Error: Package required when only facet#target is provided
 ```
 
-## The `deps` map
+## The `images` map
 
-`run` receives an object keyed by the dep strings **exactly as written in `deps`** — not by
-their expanded FQTs. This trips people up constantly:
+`run` receives `ctx.images`, keyed by the dep strings **exactly as written in `deps`** — not
+by their expanded FQTs. This trips people up constantly:
 
 ```js
 {
   deps: ['install', 'packages/common#ci#pack'],
-  run: (deps) => ({
-    FROM: deps['install'],                            // ✓ the literal string from deps
-    steps: [{ COPY: { from: deps['packages/common#ci#pack'], src: '/out/x.tgz', dest: '/x.tgz' } }],
+  run: ({ images }) => ({
+    FROM: images['install'],                          // ✓ the literal string from deps
+    steps: [{ COPY: { from: images['packages/common#ci#pack'], src: '/out/x.tgz', dest: '/x.tgz' } }],
   })
 }
 ```
 
 ```js
-deps['packages/ui#ci#install']   // ✗ undefined, even though that's what 'install' resolved to
+images['packages/ui#ci#install'] // ✗ undefined, even though that's what 'install' resolved to
 ```
 
 The values are image tags (see [08 — Internals](08-internals.md#image-tag-derivation) for how
@@ -78,7 +78,7 @@ const BASE = 'packages/base#ci#node-pnpm'
 return {
   install: {
     deps: [BASE],
-    run: (deps) => ({ FROM: deps[BASE], steps: [...] }),
+    run: ({ images }) => ({ FROM: images[BASE], steps: [...] }),
   },
 }
 ```
@@ -89,10 +89,10 @@ And if you generate a list of deps, generate the lookups the same way:
 const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
 // ...
 deps: [...packTargets, BASE],
-run: (deps) => ({
-  FROM: deps[BASE],
+run: ({ images }) => ({
+  FROM: images[BASE],
   steps: localDeps.map(d => ({
-    COPY: { from: deps[`packages/${d.local}#ci#pack`], src: `/out/${d.local}.tgz`, dest: `/repo/${d.local}.tgz` },
+    COPY: { from: images[`packages/${d.local}#ci#pack`], src: `/out/${d.local}.tgz`, dest: `/repo/${d.local}.tgz` },
   })),
 }),
 ```

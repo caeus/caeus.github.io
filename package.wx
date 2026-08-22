@@ -36,7 +36,7 @@ export default {
   config: {
     manifest: {
       deps: [BASE],
-      run: (deps) => ({
+      run: ({ images: deps }) => ({
         FROM: deps[BASE],
         steps: [
           { WORKDIR: '/repo' },
@@ -50,7 +50,7 @@ export default {
   dev: {
     sync: {
       deps: ['config#manifest'],
-      run: (deps) => ({
+      run: ({ images: deps }) => ({
         FROM: deps['config#manifest'],
         steps: [],
         IGNORE: RECOMMENDED_IGNORE,
@@ -61,7 +61,7 @@ export default {
   ci: {
     deploy: {
       deps: ['packages/ui#ci#build'],
-      run: (deps) => ({
+      run: ({ images: deps }) => ({
         FROM: deps['packages/ui#ci#build'],
         steps: [],
         IGNORE: RECOMMENDED_IGNORE,

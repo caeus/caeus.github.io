@@ -1,7 +1,7 @@
 import { resolve, relative } from 'node:path'
 import { AsyncDisposeStack, createKey, createModule, Module } from './di-container.js'
 import { loadPackages, type PackageLoader } from './pkg/loader.js'
-import type { Run, PackageDef, RunContext } from './pkg/schema.js'
+import type { Run, HostPlatform, PackageDef } from './pkg/schema.js'
 import { hostPlatform } from './host-platform.js'
 import { buildRunner, type Runner } from './runner/index.js'
 import type { BuildResult } from './runner/docker-builder.js'
@@ -31,7 +31,7 @@ const packagesKey = createKey<ReadonlyMap<string, PackageDef>>('packages')
 const dockerfileRendererKey = createKey<DockerfileRenderer>('dockerfileRenderer')
 const dockerImageBuilderKey = createKey<DockerImageBuilder>('dockerImageBuilder')
 const dockerImageExtractorKey = createKey<DockerImageExtractor>('dockerImageExtractor')
-const runContextKey = createKey<RunContext>('runContext')
+const hostPlatformKey = createKey<HostPlatform>('hostPlatform')
 const runnerKey = createKey<Runner>('runner')
 const listCommandRunnerKey = createKey<ListCommandRunner>('listCommandRunner')
 const runCommandRunnerKey = createKey<RunCommandRunner>('runCommandRunner')
@@ -50,13 +50,13 @@ export function defaultModule(_stack: AsyncDisposeStack, env: NodeJS.ProcessEnv)
     .bind(dockerImageBuilderKey).toValue({ buildDockerImage } satisfies DockerImageBuilder)
     .bind(dockerImageExtractorKey).toValue({ extractFromImage } satisfies DockerImageExtractor)
     .bind(packagesKey).toFun([rootKey, packageLoaderKey], (root, loader) => loader.loadPackages(root))
-    .bind(runContextKey).toFun([envKey], env => ({ host: hostPlatform(env) }))
+    .bind(hostPlatformKey).toFun([envKey], env => hostPlatform(env))
     .bind(runnerKey).toFun(
-      [rootKey, packagesKey, dockerfileRendererKey, dockerImageBuilderKey, runContextKey],
-      (root, packages, renderer, builder, runContext) => buildRunner(root, packages, {
+      [rootKey, packagesKey, dockerfileRendererKey, dockerImageBuilderKey, hostPlatformKey],
+      (root, packages, renderer, builder, host) => buildRunner(root, packages, {
         renderDockerfile: (r) => renderer.renderDockerfile(r),
         buildDockerImage: (content, tag, context, ignore) => builder.buildDockerImage(content, tag, context, ignore),
-      }, runContext)
+      }, host)
     )
     .bind(listCommandRunnerKey).toClass([packagesKey], ListCommandRunner)
     .bind(runCommandRunnerKey).toClass([runnerKey, dockerImageExtractorKey, hostRootKey, currentPackageKey], RunCommandRunner)

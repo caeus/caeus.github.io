@@ -48,8 +48,8 @@ export default {
         '<facet>#<target>',             // same package, different facet
         '<package>#<facet>#<target>',   // cross-package
       ],
-      run: (deps) => ({
-        FROM: deps['<target>'],         // a dep's image tag, or a registry ref
+      run: ({ images }) => ({
+        FROM: images['<target>'],       // a dep's image tag, or a registry ref
         steps: [
           { WORKDIR: '/repo' },
           { COPY: { src: 'src', dest: '/repo/src' } },

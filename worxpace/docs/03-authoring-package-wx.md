@@ -10,7 +10,7 @@ export default {
   <suiteName>: {
     <targetName>: {
       deps: [ /* target references, strings */ ],
-      run: (deps) => ({
+      run: ({ images, host }) => ({
         FROM: '<image ref>',
         steps: [ /* Step objects */ ],
         IGNORE: [ /* .dockerignore entries */ ],
@@ -26,7 +26,8 @@ Formally (this is the Zod schema in `src/pkg/schema.ts`):
 ```
 PackageDef = Record<string, FacetDef>
 FacetDef   = Record<string, TargetDef>
-TargetDef  = { deps: string[], run: (deps) => Run }
+TargetDef  = { deps: string[], run: (ctx: RunContext) => Run }
+RunContext = { images: Record<string, string>, host: HostPlatform }
 Run        = { FROM: string, steps: Step[], IGNORE: string[], EXPORT?: Record<string, string> }
 ```
 
@@ -36,6 +37,8 @@ Notes on validation:
   default, so a missing `deps` is a validation failure, not an empty list.
 - `run` must be a function. It is *not* called during loading — only when the target is
   actually built.
+- `ctx.images` maps each dependency string exactly as declared to its built image tag.
+- `ctx.host` describes the user's OS, architecture, and, on Linux, libc.
 - `steps` is required. Use `steps: []` for a target that only re-tags or re-exports its base.
 - `IGNORE` is required, and `IGNORE: []` means "upload the whole context". Also no default —
   see [`IGNORE`](#ignore) below.
@@ -109,7 +112,7 @@ export const RECOMMENDED_IGNORE = ['node_modules', '.git']
 ```js
 import { RECOMMENDED_IGNORE } from 'wx:/lib/dockerignore'
 
-run: (deps) => ({ FROM: '…', steps: [ … ], IGNORE: RECOMMENDED_IGNORE })
+run: () => ({ FROM: '…', steps: [ … ], IGNORE: RECOMMENDED_IGNORE })
 ```
 
 Excluding `node_modules` matters more than it looks. A package whose `install` target exports
@@ -120,7 +123,7 @@ With `from`, `src` is an absolute path inside the referenced image and the conte
 involved:
 
 ```js
-{ COPY: { from: deps['packages/common#ci#pack'], src: '/out/pkg.tgz', dest: '/repo/pkg.tgz' } }
+{ COPY: { from: images['packages/common#ci#pack'], src: '/out/pkg.tgz', dest: '/repo/pkg.tgz' } }
 ```
 
 ## Ordering gotcha: `WORKDIR` creates directories
@@ -184,7 +187,7 @@ export default {
   ci: {
     install: {
       deps: [],
-      run: (_deps) => ({
+      run: () => ({
         FROM: 'node:22-alpine',
         steps: [
           { RUN: `corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate` },
@@ -198,8 +201,8 @@ export default {
     },
     typecheck: {
       deps: ['install'],
-      run: (deps) => ({
-        FROM: deps['install'],
+      run: ({ images }) => ({
+        FROM: images['install'],
         steps: [
           { COPY: { src: 'src', dest: '/repo/src' } },
           { WORKDIR: '/repo' },

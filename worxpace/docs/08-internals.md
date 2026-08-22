@@ -35,16 +35,16 @@ argv ──► parseCmd ──► Cmd
      {pkg: currentPackage})     the loaded graph → stdout
          │
          ▼
-  buildRunner(root, packages, deps)   ── memo: Map<string, Promise<TargetResult>>
+  buildRunner(root, packages, deps, host)   ── memo: Map<string, Promise<TargetResult>>
          │
          │  for each dep, recursively (Promise.all), with a cycle trace
          ▼
-  runTarget(fqt, target, depResults, root, deps)
+  runTarget(fqt, target, depResults, root, deps, host)
          │
          ├─ tag       = fqt.toString() with # → -, / → _, leading non-alnum stripped
          ├─ packageDir = join(root, fqt.pkg)
-         ├─ depsMap   = { <raw dep string>: <dep image tag> }
-         ├─ runDef    = target.run(depsMap)
+         ├─ images    = { <raw dep string>: <dep image tag> }
+         ├─ runDef    = target.run({ images, host })
          ├─ content   = renderDockerfile(runDef)
          └─ build     = buildDockerImage(content, tag, packageDir, runDef.IGNORE)
          │
@@ -191,7 +191,7 @@ a function — it cannot see what `run` *returns*, since the function is not cal
 time. So `runTarget` parses the result:
 
 ```ts
-const parsed = Run.safeParse(target.run(depsMap))
+const parsed = Run.safeParse(target.run({ images, host }))
 if (!parsed.success) throw new Error(`Invalid run definition for ${fqt}: ${parsed.error.message}`)
 ```
 
@@ -232,7 +232,8 @@ The bindings in `wire.ts`:
 | `dockerfileRenderer` | `{ renderDockerfile }` |
 | `dockerImageBuilder` | `{ buildDockerImage }` |
 | `dockerImageExtractor` | `{ extractFromImage }` |
-| `runner` | `buildRunner(root, packages, { renderDockerfile, buildDockerImage })` |
+| `hostPlatform` | `hostPlatform(env)` |
+| `runner` | `buildRunner(root, packages, { renderDockerfile, buildDockerImage }, hostPlatform)` |
 | `listCommandRunner` | `ListCommandRunner(packages)` |
 | `runCommandRunner` | `RunCommandRunner(runner, extractor, hostRoot, currentPackage)` |
 | `commandRunner` | `CompositeCommandRunner(runCommandRunner, listCommandRunner)` |

@@ -113,7 +113,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
     config: {
       manifest: {
         deps: [BASE],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d[BASE],
           steps: [
             { WORKDIR: '/repo' },
@@ -131,7 +131,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
     dev: {
       sync: {
         deps: ['config#manifest'],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d['config#manifest'],
           steps: [],
           IGNORE: RECOMMENDED_IGNORE,
@@ -142,7 +142,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
       // usable native binaries. Local deps come from tarballs, so they arrive built.
       install: {
         deps: ['config#manifest', ...packTargets],
-        run: (d, ctx) => ({
+        run: ({ images: d, host }) => ({
           FROM: d['config#manifest'],
           steps: [
             ...localDeps.map(dep => ({
@@ -151,7 +151,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
             { WORKDIR: '/repo' },
             writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
             writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
-            { RUN: `pnpm install --prod=false --os ${ctx.host.os} --cpu ${ctx.host.arch}` },
+            { RUN: `pnpm install --prod=false --os ${host.os} --cpu ${host.arch}` },
           ],
           IGNORE: RECOMMENDED_IGNORE,
           EXPORT: { '/repo/node_modules': 'node_modules' },
@@ -161,7 +161,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
     ci: {
       install: {
         deps: ['config#manifest', ...packTargets],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d['config#manifest'],
           steps: [
             ...localDeps.map(dep => ({
@@ -178,7 +178,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
       },
       typecheck: {
         deps: ['install'],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d['install'],
           steps: [
             { COPY: { src: 'src', dest: '/repo/src' } },
@@ -190,7 +190,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
       },
       build: {
         deps: ['install'],
-        run: (d) => ({
+        run: ({ images: d }) => ({
           FROM: d['install'],
           steps: [
             { COPY: { src: 'src', dest: '/repo/src' } },

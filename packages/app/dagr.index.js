@@ -1,0 +1,12 @@
+import { stack } from '/stacks/dagr.ts-executable.js'
+
+export default stack({
+  name: 'app',
+  scope: 'caeus',
+  version: '0.1.0',
+  deps: [
+    { local: 'common', kind: 'prod' },
+    { remote: '@orpc/server', kind: 'prod' },
+    { remote: '@caeus/wyr', kind: 'prod' },
+  ]
+})

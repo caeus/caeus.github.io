@@ -179,11 +179,23 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
       typecheck: {
         deps: ['install'],
         run: ({ images: d }) => ({
-          FROM: d['install'],
+          FROM: d.install,
           steps: [
             { COPY: { src: 'src', dest: '/repo/src' } },
             { WORKDIR: '/repo' },
             { RUN: 'pnpm exec tsc --noEmit' },
+          ],
+          IGNORE: RECOMMENDED_IGNORE,
+        })
+      },
+      test: {
+        deps: ['install'],
+        run: ({ images: d }) => ({
+          FROM: d.install,
+          steps: [
+            { COPY: { src: 'src', dest: '/repo/src' } },
+            { WORKDIR: '/repo' },
+            { RUN: 'pnpm exec vitest run' },
           ],
           IGNORE: RECOMMENDED_IGNORE,
         })

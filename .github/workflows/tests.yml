@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  targets:
+    name: Test targets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Discover and run test targets
+        shell: bash
+        run: |
+          ./.dagr/cli.sh list | tee /tmp/dagr-targets.txt
+          mapfile -t targets < <(
+            awk '{
+              target = $0
+              sub(/\[.*/, "", target)
+              if (target ~ /^[^#]+#[^#]+#test$/) print target
+            }' /tmp/dagr-targets.txt
+          )
+
+          if ((${#targets[@]} == 0)); then
+            echo 'No #test targets found' >&2
+            exit 1
+          fi
+
+          printf 'Running %d test target(s):\n' "${#targets[@]}"
+          printf '  %s\n' "${targets[@]}"
+          ./.dagr/cli.sh run "${targets[@]}"

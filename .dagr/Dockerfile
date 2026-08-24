@@ -7,7 +7,7 @@ WORKDIR /dagr
 # The pinned SHA is part of this layer's cache key, so bumping it here is what rebuilds dagr.
 # A moving ref like `main` would cache forever and silently keep running a stale build.
 RUN git clone https://github.com/caeus/dagr.git . \
- && git checkout 05ef42a89e735650f35bb9352688825ec63bbf13
+ && git checkout 3b61315dc702dee0a69d1c067bf34867d4ae3b15
 
 RUN pnpm install --frozen-lockfile && pnpm exec tsc
 

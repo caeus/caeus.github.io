@@ -1,4 +1,4 @@
-import { PNPM_VERSION } from '/lib/dagr.versions.js'
+import versions from '/lib/dagr.versions.yaml'
 import { writeJson, writeYaml } from '/lib/dagr.file_utils.js'
 import { RECOMMENDED_IGNORE } from '/lib/dagr.dockerignore.js'
 
@@ -27,7 +27,7 @@ const ROOT_PACKAGE_JSON = {
   name: 'caeus',
   private: true,
   type: 'module',
-  packageManager: `pnpm@${PNPM_VERSION}`,
+  packageManager: `pnpm@${versions.pnpm}`,
 }
 
 const MANIFESTS = ['pnpm-workspace.yaml', 'package.json']

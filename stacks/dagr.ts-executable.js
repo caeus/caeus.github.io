@@ -1,4 +1,4 @@
-import versions from '/lib/dagr.versions.js'
+import versions from '/lib/dagr.versions.yaml'
 import { buildPackageJson, pnpmfile } from '/stacks/dagr.utils.js'
 import { writeJson, writeYaml, writeText } from '/lib/dagr.file_utils.js'
 import { RECOMMENDED_IGNORE } from '/lib/dagr.dockerignore.js'
@@ -39,7 +39,7 @@ export function stack({ name, scope, version, deps = [] }) {
   const packageJson = buildPackageJson({
     name, scope, version, deps, coreDevDeps: CORE_DEV_DEPS,
     extra: { imports: { '#*': './src/*' } },
-    versions,
+    versions: versions.deps,
   })
 
   return {

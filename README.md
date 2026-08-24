@@ -78,7 +78,7 @@ primitives in `lib/`. Each package's `dagr.index.js` is a few lines of declarati
 
 | Path | Contents |
 |---|---|
-| `lib/dagr.versions.js` | Single source of truth for dependency versions |
+| `lib/dagr.versions.yaml` | Single source of truth for dependency versions |
 | `lib/dagr.file_utils.js` | `writeText`/`writeJson`/`writeYaml` — generate a file as a build step |
 | `lib/dagr.dockerignore.js` | `RECOMMENDED_IGNORE`, the default build-context exclusions |
 | `stacks/dagr.ts-lib.js` | `stack` for libraries — config, ci (install/build/pack/typecheck), dev |

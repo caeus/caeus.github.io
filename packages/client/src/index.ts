@@ -1,7 +1,7 @@
 import { createORPCClient } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
 import type { ContractRouterClient } from '@orpc/contract'
-import { contract } from '@caeus/common'
+import { contract } from '@internal/common'
 
 export type Client = ContractRouterClient<typeof contract>
 

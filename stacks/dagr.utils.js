@@ -45,6 +45,9 @@ export function buildPackageJson({ name, scope, version, deps = [], coreDeps = [
     name: `@${scope}/${name}`,
     version,
     type: 'module',
+    // The internal scope is not a real npm org, so a stray publish would either fail or
+    // squat a name. pnpm pack still works, which is all ci#pack needs.
+    private: true,
     ...extra,
     dependencies,
     devDependencies,

@@ -1,5 +1,5 @@
 import { implement, type Router } from '@orpc/server'
-import { contract } from '@caeus/common'
+import { contract } from '@internal/common'
 
 export { contract }
 export const os = implement(contract)

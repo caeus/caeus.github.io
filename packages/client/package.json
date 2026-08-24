@@ -1,10 +1,10 @@
 {
-  "name": "@caeus/client",
+  "name": "@internal/client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@caeus/common": "workspace:*",
+    "@internal/common": "workspace:*",
     "@orpc/client": "1.14.14",
     "@orpc/contract": "1.14.14"
   },

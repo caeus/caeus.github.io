@@ -1,12 +1,13 @@
 {
-  "name": "@caeus/app",
+  "name": "@internal/app",
   "version": "0.1.0",
   "type": "module",
+  "private": true,
   "imports": {
     "#*": "./src/*"
   },
   "dependencies": {
-    "@caeus/common": ">=0.0.0",
+    "@internal/common": ">=0.0.0",
     "@orpc/server": "1.14.14",
     "@caeus/wyr": "0.0.0-rc1"
   },

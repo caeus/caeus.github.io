@@ -1,8 +1,0 @@
-{
-  "folders": [
-    { "name": "monorepo", "path": "." },
-    { "name": "dagr", "path": "dagr" },
-    { "name": "app", "path": "packages/app" },
-    { "name": "ui", "path": "packages/ui" }
-  ]
-}

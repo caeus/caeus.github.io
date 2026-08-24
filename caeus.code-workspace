@@ -1,13 +1,8 @@
 {
   "folders": [
     { "name": "monorepo", "path": "." },
-    { "name": "worxpace", "path": "worxpace" },
-    { "name": "app", "path": "packages/app" }
+    { "name": "dagr", "path": "dagr" },
+    { "name": "app", "path": "packages/app" },
     { "name": "ui", "path": "packages/ui" }
-  ],
-  "settings": {
-    "files.associations": {
-      "*.wx": "javascript"
-    }
-  }
+  ]
 }

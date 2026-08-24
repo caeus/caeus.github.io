@@ -1,0 +1,72 @@
+import { PNPM_VERSION } from '/lib/dagr.versions.js'
+import { writeJson, writeYaml } from '/lib/dagr.file_utils.js'
+import { RECOMMENDED_IGNORE } from '/lib/dagr.dockerignore.js'
+
+const BASE = 'packages/base#ci#node-pnpm'
+
+// Members are listed explicitly rather than globbed: packages/base has no package.json,
+// and packages/client is parked with a stale pre-dagr manifest.
+// allowBuilds is the union of what the member stacks need; without it a host-side
+// `pnpm install` skips these native build scripts and vite fails to start.
+const WORKSPACE = {
+  packages: [
+    'packages/common',
+    'packages/ui',
+    'packages/app',
+  ],
+  linkWorkspacePackages: true,
+  allowBuilds: {
+    esbuild: true,
+    sharp: true,
+    workerd: true,
+  },
+}
+
+// The workspace root is a container, never published, so it stays private.
+const ROOT_PACKAGE_JSON = {
+  name: 'caeus',
+  private: true,
+  type: 'module',
+  packageManager: `pnpm@${PNPM_VERSION}`,
+}
+
+const MANIFESTS = ['pnpm-workspace.yaml', 'package.json']
+
+export default {
+  config: {
+    manifest: {
+      deps: [BASE],
+      run: ({ images: deps }) => ({
+        FROM: deps[BASE],
+        steps: [
+          { WORKDIR: '/repo' },
+          writeYaml('/repo/pnpm-workspace.yaml', WORKSPACE),
+          writeJson('/repo/package.json', ROOT_PACKAGE_JSON),
+        ],
+        IGNORE: RECOMMENDED_IGNORE,
+      })
+    }
+  },
+  dev: {
+    sync: {
+      deps: ['config#manifest'],
+      run: ({ images: deps }) => ({
+        FROM: deps['config#manifest'],
+        steps: [],
+        IGNORE: RECOMMENDED_IGNORE,
+        EXPORT: Object.fromEntries(MANIFESTS.map(f => [`/repo/${f}`, f])),
+      })
+    }
+  },
+  ci: {
+    deploy: {
+      deps: ['packages/ui#ci#build'],
+      run: ({ images: deps }) => ({
+        FROM: deps['packages/ui#ci#build'],
+        steps: [],
+        IGNORE: RECOMMENDED_IGNORE,
+        EXPORT: { '/docs': 'docs' },
+      })
+    }
+  }
+}

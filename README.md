@@ -4,17 +4,25 @@ Personal site + monorepo. Deployed to GitHub Pages from `docs/`.
 
 ## Build system
 
-This repo uses **dagr** — a Docker-based task runner defined via `dagr.index.js` files. Every package declares facets of targets; targets have dependencies, a Dockerfile-like `run` definition, and an optional `EXPORT` map to materialize files back to the host. Full documentation lives in [`dagr/docs/`](dagr/docs/README.md).
+This repo uses **dagr** — a Docker-based task runner defined via `dagr.index.js` files. Every package declares facets of targets; targets have dependencies, a Dockerfile-like `run` definition, and an optional `EXPORT` map to materialize files back to the host. Full documentation lives in the [dagr repo](https://github.com/caeus/dagr/tree/main/docs).
 
-### Install `dagr`
+### Running `dagr`
+
+dagr's source is not vendored here. `.dagr/Dockerfile` clones [caeus/dagr](https://github.com/caeus/dagr) at a pinned commit and compiles it inside the image, so Docker is the only prerequisite:
 
 ```sh
-./dagr/install.sh
+./.dagr/cli.sh list
 ```
 
-This symlinks `dagr` to `~/.local/bin/dagr`. Make sure `~/.local/bin` is on your `PATH`.
+Upgrading dagr means bumping that pinned SHA — it is part of the layer's cache key, so nothing else has to change.
 
-`dagr` traverses parent directories looking for a `dagr/` folder. When found, that directory is the monorepo root and `dagr/cli.sh` is invoked from there.
+Optionally put the launcher on your `PATH`, which lets you run `dagr` from any subdirectory and have the current package inferred:
+
+```sh
+./.dagr/install.sh
+```
+
+This symlinks `dagr` to `~/.local/bin/dagr`. Make sure `~/.local/bin` is on your `PATH`. The launcher traverses parent directories looking for a `.dagr/` folder; the directory containing it is the monorepo root, and `.dagr/cli.sh` is invoked from there.
 
 ### Commands
 
@@ -36,8 +44,8 @@ dagr run .#ci#deploy                 # build ui and deploy to docs/
 ### `dagr.index.js` format
 
 A `dagr.index.js` default-exports facets of targets. See
-[03 — Authoring `dagr.index.js`](dagr/docs/03-authoring-dagr-index-js.md) for the full schema and
-every step kind.
+[03 — Authoring `dagr.index.js`](https://github.com/caeus/dagr/blob/main/docs/03-authoring-dagr-index-js.md)
+for the full schema and every step kind.
 
 ```js
 export default {

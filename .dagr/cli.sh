@@ -18,7 +18,7 @@ if [ "$HOST_OS" = linux ]; then
   if ldd --version 2>&1 | grep -qi musl; then LIBC_ENV="-e HOST_LIBC=musl"; else LIBC_ENV="-e HOST_LIBC=glibc"; fi
 fi
 
-docker build -t dagr "$REPO_ROOT/dagr"
+docker build -t dagr "$REPO_ROOT/.dagr"
 docker run --rm \
   -v "$REPO_ROOT:/repo" \
   -v /var/run/docker.sock:/var/run/docker.sock \

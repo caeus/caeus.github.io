@@ -91,7 +91,7 @@ export default mergeConfig(
 )
 `
 
-const BASE = 'packages/base#ci#node-pnpm'
+const BASE = 'packages/base:ci:node-pnpm'
 
 const MANIFESTS = [
   'package.json', 'tsconfig.json', '.prettierrc.json',
@@ -100,7 +100,7 @@ const MANIFESTS = [
 
 export function stack({ name, scope, version, outDir, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
-  const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
+  const packTargets = localDeps.map(d => `packages/${d.local}:ci:pack`)
   const packageJson = buildPackageJson({
     name, scope, version, deps,
     coreDeps: CORE_DEPS,
@@ -130,9 +130,9 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
     },
     dev: {
       sync: {
-        deps: ['config#manifest'],
+        deps: ['config:manifest'],
         run: ({ images: d }) => ({
-          FROM: d['config#manifest'],
+          FROM: d['config:manifest'],
           steps: [],
           IGNORE: RECOMMENDED_IGNORE,
           EXPORT: Object.fromEntries(MANIFESTS.map(f => [`/repo/${f}`, f])),
@@ -141,12 +141,12 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
       // Installs for the *host* platform rather than the container's, so the exported tree has
       // usable native binaries. Local deps come from tarballs, so they arrive built.
       install: {
-        deps: ['config#manifest', ...packTargets],
+        deps: ['config:manifest', ...packTargets],
         run: ({ images: d, host }) => ({
-          FROM: d['config#manifest'],
+          FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+              COPY: { from: d[`packages/${dep.local}:ci:pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
             })),
             { WORKDIR: '/repo' },
             writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),
@@ -160,12 +160,12 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
     },
     ci: {
       install: {
-        deps: ['config#manifest', ...packTargets],
+        deps: ['config:manifest', ...packTargets],
         run: ({ images: d }) => ({
-          FROM: d['config#manifest'],
+          FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+              COPY: { from: d[`packages/${dep.local}:ci:pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
             })),
             { WORKDIR: '/repo' },
             writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),

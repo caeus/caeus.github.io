@@ -29,13 +29,13 @@ const PRETTIERRC = {
   trailingComma: 'none',
 }
 
-const BASE = 'packages/base#ci#node-pnpm'
+const BASE = 'packages/base:ci:node-pnpm'
 
 const MANIFESTS = ['package.json', 'tsconfig.json', '.prettierrc.json']
 
 export function stack({ name, scope, version, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
-  const packTargets = localDeps.map(d => `packages/${d.local}#ci#pack`)
+  const packTargets = localDeps.map(d => `packages/${d.local}:ci:pack`)
   const packageJson = buildPackageJson({
     name, scope, version, deps, coreDevDeps: CORE_DEV_DEPS,
     extra: { imports: { '#*': './src/*' } },
@@ -60,9 +60,9 @@ export function stack({ name, scope, version, deps = [] }) {
     },
     dev: {
       sync: {
-        deps: ['config#manifest'],
+        deps: ['config:manifest'],
         run: ({ images: d }) => ({
-          FROM: d['config#manifest'],
+          FROM: d['config:manifest'],
           steps: [],
           IGNORE: RECOMMENDED_IGNORE,
           EXPORT: Object.fromEntries(MANIFESTS.map(f => [`/repo/${f}`, f])),
@@ -71,12 +71,12 @@ export function stack({ name, scope, version, deps = [] }) {
     },
     ci: {
       install: {
-        deps: ['config#manifest', ...packTargets],
+        deps: ['config:manifest', ...packTargets],
         run: ({ images: d }) => ({
-          FROM: d['config#manifest'],
+          FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[`packages/${dep.local}#ci#pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+              COPY: { from: d[`packages/${dep.local}:ci:pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
             })),
             { WORKDIR: '/repo' },
             writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),

@@ -53,8 +53,8 @@ export default {
     <target>: {
       deps: [
         '<target>',                     // same facet
-        '<facet>#<target>',             // same package, different facet
-        '<package>#<facet>#<target>',   // cross-package
+        '<facet>:<target>',             // same package, different facet
+        '<package>:<facet>:<target>',   // cross-package
       ],
       run: ({ images }) => ({
         FROM: images['<target>'],       // a dep's image tag, or a registry ref

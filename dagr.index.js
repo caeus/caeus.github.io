@@ -65,7 +65,7 @@ export default {
         FROM: deps['packages/ui:ci:build'],
         steps: [],
         IGNORE: RECOMMENDED_IGNORE,
-        EXPORT: { '/docs': 'docs' },
+        EXPORT: { '/repo/dist': 'docs' },
       })
     }
   }

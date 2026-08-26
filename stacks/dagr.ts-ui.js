@@ -58,17 +58,13 @@ module.exports = {
 }
 `
 
-const viteConfig = (outDir) => `import { fileURLToPath, URL } from 'node:url'
+const VITE_CONFIG = `import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  build: {
-    outDir: '${outDir}',
-    emptyOutDir: true,
-  },
   resolve: {
     alias: { '#': fileURLToPath(new URL('./src', import.meta.url)) },
   },
@@ -98,7 +94,7 @@ const MANIFESTS = [
   '.eslintrc.cjs', 'vite.config.ts', 'vitest.config.ts',
 ]
 
-export function stack({ name, scope, version, outDir, deps = [] }) {
+export function stack({ name, scope, version, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `packages/${d.local}:ci:pack`)
   const packageJson = buildPackageJson({
@@ -121,7 +117,7 @@ export function stack({ name, scope, version, outDir, deps = [] }) {
             writeJson('/repo/tsconfig.json', TSCONFIG),
             writeJson('/repo/.prettierrc.json', PRETTIERRC),
             writeText('/repo/.eslintrc.cjs', ESLINTRC),
-            writeText('/repo/vite.config.ts', viteConfig(outDir)),
+            writeText('/repo/vite.config.ts', VITE_CONFIG),
             writeText('/repo/vitest.config.ts', VITEST_CONFIG),
           ],
           IGNORE: RECOMMENDED_IGNORE,

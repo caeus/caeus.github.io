@@ -22,12 +22,12 @@ jobs:
             awk '{
               target = $0
               sub(/\[.*/, "", target)
-              if (target ~ /^[^#]+#[^#]+#test$/) print target
+              if (target ~ /:test$/) print target
             }' /tmp/dagr-targets.txt
           )
 
           if ((${#targets[@]} == 0)); then
-            echo 'No #test targets found' >&2
+            echo 'No :test targets found' >&2
             exit 1
           fi
 

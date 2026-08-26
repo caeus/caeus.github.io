@@ -1,6 +1,6 @@
 FROM node:22-alpine
 
-RUN apk add --no-cache docker-cli docker-cli-buildx git && corepack enable && corepack prepare pnpm@latest --activate
+RUN apk add --no-cache docker-cli docker-cli-buildx git && corepack enable && corepack prepare pnpm@11.23.0 --activate
 
 WORKDIR /dagr
 

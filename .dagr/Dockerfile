@@ -1,6 +1,6 @@
-FROM node:22-alpine
+FROM node:22-alpine AS build
 
-RUN apk add --no-cache docker-cli docker-cli-buildx git && corepack enable && corepack prepare pnpm@latest --activate
+RUN apk add --no-cache git && corepack enable && corepack prepare pnpm@11.23.0 --activate
 
 WORKDIR /dagr
 
@@ -8,7 +8,19 @@ WORKDIR /dagr
 # A moving ref like `main` would cache forever and silently keep running a stale build.
 RUN git clone --revision=df633880e0c4ffb3efa476023204538299f6beb6 --depth 1 https://github.com/caeus/dagr.git .
 
-RUN pnpm install --frozen-lockfile && pnpm exec tsc
+RUN pnpm install --frozen-lockfile
+RUN pnpm exec tsc
+RUN pnpm install --prod --frozen-lockfile
+
+FROM node:22-alpine
+
+RUN apk add --no-cache docker-cli docker-cli-buildx
+
+WORKDIR /dagr
+
+COPY --from=build /dagr/package.json ./
+COPY --from=build /dagr/dist ./dist
+COPY --from=build /dagr/node_modules ./node_modules
 
 ENV REPO_ROOT=/repo
 

@@ -5,7 +5,6 @@ export default stack({
   name: 'ui',
   scope: INTERNAL_SCOPE,
   version: '0.1.0',
-  outDir: '../../docs',
   deps: [
     { local: 'common', kind: 'prod' },
   ]

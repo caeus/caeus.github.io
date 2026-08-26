@@ -1,5 +1,5 @@
-import { stack } from '/stacks/dagr.ts-lib.js'
-import { INTERNAL_SCOPE } from '/lib/dagr.scope.js'
+import { stack } from '//stacks/dagr.ts-lib.js'
+import { INTERNAL_SCOPE } from '//lib/dagr.scope.js'
 
 export default stack({
   name: 'common',

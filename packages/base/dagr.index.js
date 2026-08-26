@@ -1,5 +1,5 @@
-import versions from '/lib/dagr.versions.yaml'
-import { RECOMMENDED_IGNORE } from '/lib/dagr.dockerignore.js'
+import versions from '//lib/dagr.versions.yaml'
+import { RECOMMENDED_IGNORE } from '//lib/dagr.dockerignore.js'
 
 export default {
   ci: {

@@ -1,8 +1,8 @@
-import versions from '/lib/dagr.versions.yaml'
-import { writeJson, writeYaml } from '/lib/dagr.file_utils.js'
-import { RECOMMENDED_IGNORE } from '/lib/dagr.dockerignore.js'
+import versions from '//lib/dagr.versions.yaml'
+import { writeJson, writeYaml } from '//lib/dagr.file_utils.js'
+import { RECOMMENDED_IGNORE } from '//lib/dagr.dockerignore.js'
 
-const BASE = 'packages/base:ci:node-pnpm'
+const BASE = '//packages/base:ci:node-pnpm'
 
 // Members are listed explicitly rather than globbed: packages/base has no package.json,
 // and packages/client is parked with a stale pre-dagr manifest.
@@ -60,9 +60,9 @@ export default {
   },
   ci: {
     deploy: {
-      deps: ['packages/ui:ci:build'],
+      deps: ['//packages/ui:ci:build'],
       run: ({ images: deps }) => ({
-        FROM: deps['packages/ui:ci:build'],
+        FROM: deps['//packages/ui:ci:build'],
         steps: [],
         IGNORE: RECOMMENDED_IGNORE,
         EXPORT: { '/repo/dist': 'docs' },

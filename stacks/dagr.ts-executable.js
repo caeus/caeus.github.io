@@ -1,7 +1,7 @@
-import versions from '/lib/dagr.versions.yaml'
-import { buildPackageJson, pnpmfile } from '/stacks/dagr.utils.js'
-import { writeJson, writeYaml, writeText } from '/lib/dagr.file_utils.js'
-import { RECOMMENDED_IGNORE } from '/lib/dagr.dockerignore.js'
+import versions from '//lib/dagr.versions.yaml'
+import { buildPackageJson, pnpmfile } from '//stacks/dagr.utils.js'
+import { writeJson, writeYaml, writeText } from '//lib/dagr.file_utils.js'
+import { RECOMMENDED_IGNORE } from '//lib/dagr.dockerignore.js'
 
 const CORE_DEV_DEPS = ['@tsconfig/strictest', '@cloudflare/workers-types', 'typescript', 'wrangler']
 
@@ -29,13 +29,13 @@ const PRETTIERRC = {
   trailingComma: 'none',
 }
 
-const BASE = 'packages/base:ci:node-pnpm'
+const BASE = '//packages/base:ci:node-pnpm'
 
 const MANIFESTS = ['package.json', 'tsconfig.json', '.prettierrc.json']
 
 export function stack({ name, scope, version, deps = [] }) {
   const localDeps = deps.filter(d => 'local' in d)
-  const packTargets = localDeps.map(d => `packages/${d.local}:ci:pack`)
+  const packTargets = localDeps.map(d => `//packages/${d.local}:ci:pack`)
   const packageJson = buildPackageJson({
     name, scope, version, deps, coreDevDeps: CORE_DEV_DEPS,
     extra: { imports: { '#*': './src/*' } },
@@ -76,7 +76,7 @@ export function stack({ name, scope, version, deps = [] }) {
           FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[`packages/${dep.local}:ci:pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+              COPY: { from: d[`//packages/${dep.local}:ci:pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
             })),
             { WORKDIR: '/repo' },
             writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),

@@ -28,17 +28,17 @@ This symlinks `dagr` to `~/.local/bin/dagr`. Make sure `~/.local/bin` is on your
 
 ```sh
 dagr list                              # list all available targets
-dagr run <package>:<facet>:<target>    # run a specific target
+dagr run //<package>:<facet>:<target>  # run a specific target
 ```
 
 Examples:
 
 ```sh
-dagr run packages/ui:ci:install      # install node_modules (exports to host)
-dagr run packages/ui:ci:typecheck    # type-check
-dagr run packages/ui:ci:build        # vite production build
-dagr run packages/common:ci:pack     # tarball the library for local consumers
-dagr run .:ci:deploy                 # build ui and deploy to docs/
+dagr run //packages/ui:ci:install      # install node_modules (exports to host)
+dagr run //packages/ui:ci:typecheck    # type-check
+dagr run //packages/ui:ci:build        # vite production build
+dagr run //packages/common:ci:pack     # tarball the library for local consumers
+dagr run //:ci:deploy                 # build ui and deploy to docs/
 ```
 
 ### `dagr.index.js` format
@@ -95,8 +95,8 @@ The containerized `ci:install` produces a Linux `node_modules`, which can't run 
 So local dev generates the manifests and lets your host do the install:
 
 ```sh
-dagr run .:dev:sync                  # root pnpm-workspace.yaml + package.json
-dagr run packages/ui:dev:sync        # per-package manifests
+dagr run //:dev:sync                  # root pnpm-workspace.yaml + package.json
+dagr run //packages/ui:dev:sync        # per-package manifests
 pnpm install                       # from the repo root — platform-correct binaries
 cd packages/ui && pnpm exec vite
 ```

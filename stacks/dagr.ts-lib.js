@@ -111,7 +111,7 @@ export function stack({ location, scope, version, deps = [] }) {
               COPY: { from: d[packTarget(dep)], src: '/out', dest: '/out' }
             })),
             { WORKDIR: '/repo' },
-            { RUN: `mkdir -p /tmp/pack && pnpm pack --pack-destination /tmp/pack && mv /tmp/pack/*.tgz /out/${slug}.tgz` },
+            { RUN: `mkdir -p /tmp/pack /out && pnpm pack --pack-destination /tmp/pack && mv /tmp/pack/*.tgz /out/${slug}.tgz` },
           ],
           IGNORE: RECOMMENDED_IGNORE,
         })

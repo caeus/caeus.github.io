@@ -6,8 +6,8 @@ export default stack({
   scope: INTERNAL_SCOPE,
   version: '0.1.0',
   deps: [
-    { remote: '@orpc/contract', kind: 'prod' },
-    { remote: '@orpc/zod', kind: 'prod' },
-    { remote: 'zod', kind: 'prod' },
+    { package: '@orpc/contract', at: 'prod' },
+    { package: '@orpc/zod', at: 'prod' },
+    { package: 'zod', at: 'prod' },
   ]
 })

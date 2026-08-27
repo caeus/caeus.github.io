@@ -34,8 +34,10 @@ const MANIFESTS = ['package.json', 'tsconfig.json', '.prettierrc.json']
 export function stack({ location, scope, version, deps = [] }) {
   const name = projectName(location, scope)
   const slug = name.slice(name.indexOf('/') + 1)
-  const localDeps = deps.filter(d => 'local' in d)
-  const packTargets = localDeps.map(d => `//packages/${d.local}:ci:pack`)
+  const localDeps = deps.filter(d => d.package.startsWith('//'))
+  const packTarget = dep => `${dep.package}:ci:pack`
+  const localSlug = dep => projectName(dep.package, scope).slice(`@${scope}/`.length)
+  const packTargets = localDeps.map(packTarget)
   const packageJson = buildPackageJson({
     name, scope, version, deps, coreDevDeps: CORE_DEV_DEPS, versions: versions.deps,
     extra: {
@@ -80,7 +82,7 @@ export function stack({ location, scope, version, deps = [] }) {
           FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[`//packages/${dep.local}:ci:pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+              COPY: { from: d[packTarget(dep)], src: `/out/${localSlug(dep)}.tgz`, dest: `/repo/${localSlug(dep)}.tgz` }
             })),
             { WORKDIR: '/repo' },
             writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),

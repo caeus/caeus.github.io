@@ -36,7 +36,6 @@ export function stack({ location, scope, version, deps = [] }) {
   const slug = name.slice(name.indexOf('/') + 1)
   const localDeps = deps.filter(d => 'pkg' in d)
   const packTarget = dep => `${dep.pkg}:ci:pack`
-  const localSlug = dep => projectName(dep.pkg, scope).slice(`@${scope}/`.length)
   const packTargets = localDeps.map(packTarget)
   const packageJson = buildPackageJson({
     name, scope, version, deps, coreDevDeps: CORE_DEV_DEPS, versions: versions.deps,
@@ -82,10 +81,10 @@ export function stack({ location, scope, version, deps = [] }) {
           FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[packTarget(dep)], src: `/out/${localSlug(dep)}.tgz`, dest: `/repo/${localSlug(dep)}.tgz` }
+              COPY: { from: d[packTarget(dep)], src: '/out', dest: '/repo' }
             })),
             { WORKDIR: '/repo' },
-            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
             { RUN: 'pnpm install --prod=false' },
           ],
           IGNORE: RECOMMENDED_IGNORE,
@@ -104,12 +103,15 @@ export function stack({ location, scope, version, deps = [] }) {
         })
       },
       pack: {
-        deps: ['build'],
+        deps: ['build', ...packTargets],
         run: ({ images: d }) => ({
           FROM: d['build'],
           steps: [
+            ...localDeps.map(dep => ({
+              COPY: { from: d[packTarget(dep)], src: '/out', dest: '/out' }
+            })),
             { WORKDIR: '/repo' },
-            { RUN: `pnpm pack --pack-destination /out && mv /out/*.tgz /out/${slug}.tgz` },
+            { RUN: `mkdir -p /tmp/pack /out && pnpm pack --pack-destination /tmp/pack && mv /tmp/pack/*.tgz /out/${slug}.tgz` },
           ],
           IGNORE: RECOMMENDED_IGNORE,
         })

@@ -92,6 +92,9 @@ from them, and `dev` syncs them to your host for local work. Stacks derive the p
 flattened, so `//packages/a/b` becomes `@internal/a-b`. Dependencies use `{ pkg, at }` for
 logical packages and `{ npm, at }` for registry packages, for example
 `{ pkg: '//packages/common', at: 'prod' }` and `{ npm: 'zod', at: 'prod' }`.
+Each library's `ci:pack` output contains its own tarball and the complete transitive closure of local
+package tarballs. Consumers copy that closure and rewrite every `@internal/*` dependency to its
+local tarball during installation.
 
 ### Local development
 

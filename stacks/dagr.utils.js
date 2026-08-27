@@ -17,6 +17,20 @@ function readPackage(pkg) {
 module.exports = { hooks: { readPackage } }
 `
 
+export function projectName(location, scope) {
+  if (!location.startsWith('//')) {
+    throw new Error(`Expected a logical package location, got ${JSON.stringify(location)}`)
+  }
+
+  const path = location.slice(2)
+  const relativePath = path.startsWith('packages/') ? path.slice('packages/'.length) : path
+  if (!relativePath) {
+    throw new Error(`Cannot infer a project name from ${location}`)
+  }
+
+  return `@${scope}/${relativePath.replaceAll('/', '-')}`
+}
+
 const KINDS = ['prod', 'dev']
 
 export function buildPackageJson({ name, scope, version, deps = [], coreDeps = [], coreDevDeps = [], extra = {}, versions }) {
@@ -42,7 +56,7 @@ export function buildPackageJson({ name, scope, version, deps = [], coreDeps = [
     ...ofKind('dev'),
   ])
   return {
-    name: `@${scope}/${name}`,
+    name,
     version,
     type: 'module',
     // The internal scope is not a real npm org, so a stray publish would either fail or

@@ -1,5 +1,5 @@
 import versions from '//lib/dagr.versions.yaml'
-import { buildPackageJson, pnpmfile } from '//stacks/dagr.utils.js'
+import { buildPackageJson, pnpmfile, projectName } from '//stacks/dagr.utils.js'
 import { writeJson, writeText } from '//lib/dagr.file_utils.js'
 import { RECOMMENDED_IGNORE } from '//lib/dagr.dockerignore.js'
 
@@ -31,7 +31,9 @@ const BASE = '//packages/base:ci:node-pnpm'
 
 const MANIFESTS = ['package.json', 'tsconfig.json', '.prettierrc.json']
 
-export function stack({ name, scope, version, deps = [] }) {
+export function stack({ location, scope, version, deps = [] }) {
+  const name = projectName(location, scope)
+  const slug = name.slice(name.indexOf('/') + 1)
   const localDeps = deps.filter(d => 'local' in d)
   const packTargets = localDeps.map(d => `//packages/${d.local}:ci:pack`)
   const packageJson = buildPackageJson({
@@ -105,7 +107,7 @@ export function stack({ name, scope, version, deps = [] }) {
           FROM: d['build'],
           steps: [
             { WORKDIR: '/repo' },
-            { RUN: `pnpm pack --pack-destination /out && mv /out/*.tgz /out/${name}.tgz` },
+            { RUN: `pnpm pack --pack-destination /out && mv /out/*.tgz /out/${slug}.tgz` },
           ],
           IGNORE: RECOMMENDED_IGNORE,
         })

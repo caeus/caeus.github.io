@@ -1,4 +1,4 @@
-export const pnpmfile = (scope, localDeps) => `const localPackages = new Set(${JSON.stringify(localDeps.map(dep => projectName(dep.ref, scope)))})
+export const pnpmfile = (scope, localDeps) => `const localPackages = new Set(${JSON.stringify(localDeps.map(dep => projectName(dep.pkg, scope)))})
 
 function readPackage(pkg) {
   for (const depField of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
@@ -37,14 +37,18 @@ export function buildPackageJson({ name, scope, version, deps = [], coreDeps = [
   // Without this a mistyped `at` would drop the dependency from both manifest fields, leaving a
   // package that installs cleanly and fails at import time.
   for (const d of deps) {
+    const sources = ['pkg', 'npm'].filter(source => source in d)
+    if (sources.length !== 1) {
+      throw new Error(`${name}: dependency needs exactly one of pkg or npm`)
+    }
     if (!DEPENDENCY_LOCATIONS.includes(d.at)) {
-      throw new Error(`${name}: dependency ${d.ref} needs at ${DEPENDENCY_LOCATIONS.join(' or ')}, got ${JSON.stringify(d.at)}`)
+      throw new Error(`${name}: dependency ${d.pkg ?? d.npm} needs at ${DEPENDENCY_LOCATIONS.join(' or ')}, got ${JSON.stringify(d.at)}`)
     }
   }
 
-  const entry = (d) => d.ref.startsWith('//')
-    ? [projectName(d.ref, scope), '>=0.0.0']
-    : [d.ref, versions[d.ref]]
+  const entry = (d) => 'pkg' in d
+    ? [projectName(d.pkg, scope), '>=0.0.0']
+    : [d.npm, versions[d.npm]]
   const at = (location) => deps.filter(d => d.at === location).map(entry)
 
   const dependencies = Object.fromEntries([

@@ -6,6 +6,6 @@ export default stack({
   scope: INTERNAL_SCOPE,
   version: '0.1.0',
   deps: [
-    { ref: '//packages/common', at: 'prod' },
+    { pkg: '//packages/common', at: 'prod' },
   ]
 })

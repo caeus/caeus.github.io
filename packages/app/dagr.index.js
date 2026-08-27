@@ -6,8 +6,8 @@ export default stack({
   scope: INTERNAL_SCOPE,
   version: '0.1.0',
   deps: [
-    { ref: '//packages/common', at: 'prod' },
-    { ref: '@orpc/server', at: 'prod' },
-    { ref: '@caeus/wyr', at: 'prod' },
+    { pkg: '//packages/common', at: 'prod' },
+    { npm: '@orpc/server', at: 'prod' },
+    { npm: '@caeus/wyr', at: 'prod' },
   ]
 })

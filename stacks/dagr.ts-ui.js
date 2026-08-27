@@ -1,5 +1,5 @@
 import versions from '//lib/dagr.versions.yaml'
-import { buildPackageJson, pnpmfile } from '//stacks/dagr.utils.js'
+import { buildPackageJson, pnpmfile, projectName } from '//stacks/dagr.utils.js'
 import { writeJson, writeYaml, writeText } from '//lib/dagr.file_utils.js'
 import { RECOMMENDED_IGNORE } from '//lib/dagr.dockerignore.js'
 
@@ -94,9 +94,12 @@ const MANIFESTS = [
   '.eslintrc.cjs', 'vite.config.ts', 'vitest.config.ts',
 ]
 
-export function stack({ name, scope, version, deps = [] }) {
-  const localDeps = deps.filter(d => 'local' in d)
-  const packTargets = localDeps.map(d => `//packages/${d.local}:ci:pack`)
+export function stack({ location, scope, version, deps = [] }) {
+  const name = projectName(location, scope)
+  const localDeps = deps.filter(d => 'pkg' in d)
+  const packTarget = dep => `${dep.pkg}:ci:pack`
+  const localSlug = dep => projectName(dep.pkg, scope).slice(`@${scope}/`.length)
+  const packTargets = localDeps.map(packTarget)
   const packageJson = buildPackageJson({
     name, scope, version, deps,
     coreDeps: CORE_DEPS,
@@ -142,7 +145,7 @@ export function stack({ name, scope, version, deps = [] }) {
           FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[`//packages/${dep.local}:ci:pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+              COPY: { from: d[packTarget(dep)], src: `/out/${localSlug(dep)}.tgz`, dest: `/repo/${localSlug(dep)}.tgz` }
             })),
             { WORKDIR: '/repo' },
             writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),
@@ -161,7 +164,7 @@ export function stack({ name, scope, version, deps = [] }) {
           FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[`//packages/${dep.local}:ci:pack`], src: `/out/${dep.local}.tgz`, dest: `/repo/${dep.local}.tgz` }
+              COPY: { from: d[packTarget(dep)], src: `/out/${localSlug(dep)}.tgz`, dest: `/repo/${localSlug(dep)}.tgz` }
             })),
             { WORKDIR: '/repo' },
             writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),

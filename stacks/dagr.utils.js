@@ -1,4 +1,4 @@
-export const pnpmfile = (scope, localDeps) => `const localPackages = new Set(${JSON.stringify(localDeps.map(dep => `@${scope}/${dep.local}`))})
+export const pnpmfile = (scope, localDeps) => `const localPackages = new Set(${JSON.stringify(localDeps.map(dep => projectName(dep.pkg, scope)))})
 
 function readPackage(pkg) {
   for (const depField of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
@@ -17,32 +17,50 @@ function readPackage(pkg) {
 module.exports = { hooks: { readPackage } }
 `
 
-const KINDS = ['prod', 'dev']
+export function projectName(location, scope) {
+  if (!location.startsWith('//')) {
+    throw new Error(`Expected a logical package location, got ${JSON.stringify(location)}`)
+  }
+
+  const path = location.slice(2)
+  const relativePath = path.startsWith('packages/') ? path.slice('packages/'.length) : path
+  if (!relativePath) {
+    throw new Error(`Cannot infer a project name from ${location}`)
+  }
+
+  return `@${scope}/${relativePath.replaceAll('/', '-')}`
+}
+
+const DEPENDENCY_LOCATIONS = ['prod', 'dev']
 
 export function buildPackageJson({ name, scope, version, deps = [], coreDeps = [], coreDevDeps = [], extra = {}, versions }) {
-  // Without this a mistyped kind would drop the dependency from both manifest fields, leaving a
+  // Without this a mistyped `at` would drop the dependency from both manifest fields, leaving a
   // package that installs cleanly and fails at import time.
   for (const d of deps) {
-    if (!KINDS.includes(d.kind)) {
-      throw new Error(`${name}: dependency ${d.local ?? d.remote} needs kind ${KINDS.join(' or ')}, got ${JSON.stringify(d.kind)}`)
+    const sources = ['pkg', 'npm'].filter(source => source in d)
+    if (sources.length !== 1) {
+      throw new Error(`${name}: dependency needs exactly one of pkg or npm`)
+    }
+    if (!DEPENDENCY_LOCATIONS.includes(d.at)) {
+      throw new Error(`${name}: dependency ${d.pkg ?? d.npm} needs at ${DEPENDENCY_LOCATIONS.join(' or ')}, got ${JSON.stringify(d.at)}`)
     }
   }
 
-  const entry = (d) => 'local' in d
-    ? [`@${scope}/${d.local}`, '>=0.0.0']
-    : [d.remote, versions[d.remote]]
-  const ofKind = (kind) => deps.filter(d => d.kind === kind).map(entry)
+  const entry = (d) => 'pkg' in d
+    ? [projectName(d.pkg, scope), '>=0.0.0']
+    : [d.npm, versions[d.npm]]
+  const at = (location) => deps.filter(d => d.at === location).map(entry)
 
   const dependencies = Object.fromEntries([
     ...coreDeps.map(pkg => [pkg, versions[pkg]]),
-    ...ofKind('prod'),
+    ...at('prod'),
   ])
   const devDependencies = Object.fromEntries([
     ...coreDevDeps.map(pkg => [pkg, versions[pkg]]),
-    ...ofKind('dev'),
+    ...at('dev'),
   ])
   return {
-    name: `@${scope}/${name}`,
+    name,
     version,
     type: 'module',
     // The internal scope is not a real npm org, so a stray publish would either fail or

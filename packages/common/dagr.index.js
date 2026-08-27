@@ -2,12 +2,12 @@ import { stack } from '//stacks/dagr.ts-lib.js'
 import { INTERNAL_SCOPE } from '//lib/dagr.scope.js'
 
 export default stack({
-  name: 'common',
+  location: import.meta.dagr.location,
   scope: INTERNAL_SCOPE,
   version: '0.1.0',
   deps: [
-    { remote: '@orpc/contract', kind: 'prod' },
-    { remote: '@orpc/zod', kind: 'prod' },
-    { remote: 'zod', kind: 'prod' },
+    { npm: '@orpc/contract', at: 'prod' },
+    { npm: '@orpc/zod', at: 'prod' },
+    { npm: 'zod', at: 'prod' },
   ]
 })

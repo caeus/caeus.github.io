@@ -87,7 +87,11 @@ primitives in `lib/`. Each package's `dagr.index.js` is a few lines of declarati
 | `stacks/dagr.utils.js` | `buildPackageJson`, `pnpmfile` helpers |
 
 Each stack returns three facets: `config` generates the manifests, `ci` installs and builds
-from them, and `dev` syncs them to your host for local work.
+from them, and `dev` syncs them to your host for local work. Stacks derive the package name from
+`import.meta.dagr.location`: `//packages/ui` becomes `@internal/ui`, while nested paths are
+flattened, so `//packages/a/b` becomes `@internal/a-b`. Dependencies use `{ pkg, at }` for
+logical packages and `{ npm, at }` for registry packages, for example
+`{ pkg: '//packages/common', at: 'prod' }` and `{ npm: 'zod', at: 'prod' }`.
 
 ### Local development
 

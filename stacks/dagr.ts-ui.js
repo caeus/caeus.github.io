@@ -98,7 +98,6 @@ export function stack({ location, scope, version, deps = [] }) {
   const name = projectName(location, scope)
   const localDeps = deps.filter(d => 'pkg' in d)
   const packTarget = dep => `${dep.pkg}:ci:pack`
-  const localSlug = dep => projectName(dep.pkg, scope).slice(`@${scope}/`.length)
   const packTargets = localDeps.map(packTarget)
   const packageJson = buildPackageJson({
     name, scope, version, deps,
@@ -145,10 +144,10 @@ export function stack({ location, scope, version, deps = [] }) {
           FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[packTarget(dep)], src: `/out/${localSlug(dep)}.tgz`, dest: `/repo/${localSlug(dep)}.tgz` }
+              COPY: { from: d[packTarget(dep)], src: '/out', dest: '/repo' }
             })),
             { WORKDIR: '/repo' },
-            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
             writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
             { RUN: `pnpm install --prod=false --os ${host.os} --cpu ${host.arch}` },
           ],
@@ -164,10 +163,10 @@ export function stack({ location, scope, version, deps = [] }) {
           FROM: d['config:manifest'],
           steps: [
             ...localDeps.map(dep => ({
-              COPY: { from: d[packTarget(dep)], src: `/out/${localSlug(dep)}.tgz`, dest: `/repo/${localSlug(dep)}.tgz` }
+              COPY: { from: d[packTarget(dep)], src: '/out', dest: '/repo' }
             })),
             { WORKDIR: '/repo' },
-            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope, localDeps)),
+            writeText('/repo/.pnpmfile.cjs', pnpmfile(scope)),
             writeYaml('/repo/pnpm-workspace.yaml', { allowBuilds: { esbuild: true } }),
             { RUN: 'pnpm install --prod=false' },
           ],

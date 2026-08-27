@@ -35,9 +35,9 @@ const MANIFESTS = ['package.json', 'tsconfig.json', '.prettierrc.json']
 
 export function stack({ location, scope, version, deps = [] }) {
   const name = projectName(location, scope)
-  const localDeps = deps.filter(d => d.package.startsWith('//'))
-  const packTarget = dep => `${dep.package}:ci:pack`
-  const localSlug = dep => projectName(dep.package, scope).slice(`@${scope}/`.length)
+  const localDeps = deps.filter(d => d.ref.startsWith('//'))
+  const packTarget = dep => `${dep.ref}:ci:pack`
+  const localSlug = dep => projectName(dep.ref, scope).slice(`@${scope}/`.length)
   const packTargets = localDeps.map(packTarget)
   const packageJson = buildPackageJson({
     name, scope, version, deps, coreDevDeps: CORE_DEV_DEPS,

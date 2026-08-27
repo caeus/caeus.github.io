@@ -1,4 +1,4 @@
-export const pnpmfile = (scope, localDeps) => `const localPackages = new Set(${JSON.stringify(localDeps.map(dep => projectName(dep.package, scope)))})
+export const pnpmfile = (scope, localDeps) => `const localPackages = new Set(${JSON.stringify(localDeps.map(dep => projectName(dep.ref, scope)))})
 
 function readPackage(pkg) {
   for (const depField of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
@@ -38,13 +38,13 @@ export function buildPackageJson({ name, scope, version, deps = [], coreDeps = [
   // package that installs cleanly and fails at import time.
   for (const d of deps) {
     if (!DEPENDENCY_LOCATIONS.includes(d.at)) {
-      throw new Error(`${name}: dependency ${d.package} needs at ${DEPENDENCY_LOCATIONS.join(' or ')}, got ${JSON.stringify(d.at)}`)
+      throw new Error(`${name}: dependency ${d.ref} needs at ${DEPENDENCY_LOCATIONS.join(' or ')}, got ${JSON.stringify(d.at)}`)
     }
   }
 
-  const entry = (d) => d.package.startsWith('//')
-    ? [projectName(d.package, scope), '>=0.0.0']
-    : [d.package, versions[d.package]]
+  const entry = (d) => d.ref.startsWith('//')
+    ? [projectName(d.ref, scope), '>=0.0.0']
+    : [d.ref, versions[d.ref]]
   const at = (location) => deps.filter(d => d.at === location).map(entry)
 
   const dependencies = Object.fromEntries([

@@ -34,7 +34,7 @@ dagr run //<package>:<facet>:<target>  # run a specific target
 Examples:
 
 ```sh
-dagr run //packages/ui:ci:install      # install node_modules (exports to host)
+dagr run //packages/ui:dev:install     # install host-compatible node_modules
 dagr run //packages/ui:ci:typecheck    # type-check
 dagr run //packages/ui:ci:build        # vite production build
 dagr run //packages/common:ci:pack     # tarball the library for local consumers
@@ -73,21 +73,21 @@ export default {
 
 ### Shared build logic
 
-Rather than repeating targets per package, the facets come from factories in `stacks/`, with
-primitives in `lib/`. Each package's `dagr.index.js` is a few lines of declaration.
+Rather than repeating targets per package, this repository mounts the `typescript` component from
+`caeus/dagr-stacks` at an exact commit. Each package selects an archetype and capabilities; its
+`dagr.index.js` contains only package facts and dependencies.
 
 | Path | Contents |
 |---|---|
 | `lib/dagr.versions.yaml` | Single source of truth for dependency versions |
-| `lib/dagr.file_utils.js` | `writeText`/`writeJson`/`writeYaml` — generate a file as a build step |
+| `lib/dagr.file_utils.js` | Root workspace file generation helpers |
 | `lib/dagr.dockerignore.js` | `RECOMMENDED_IGNORE`, the default build-context exclusions |
-| `stacks/dagr.ts-lib.js` | `stack` for libraries — config, ci (install/build/pack/typecheck), dev |
-| `stacks/dagr.ts-ui.js` | `stack` for the Vite frontend |
-| `stacks/dagr.ts-executable.js` | `stack` for the Worker |
-| `stacks/dagr.utils.js` | `buildPackageJson`, `pnpmfile` helpers |
+| `stacks/ts/dagr.index.js` | Sparse mount pinned to the shared `typescript` component |
+| `stacks/dagr.typescript.js` | Repository policy plus library, Worker, and UI compositions |
 
-Each stack returns three facets: `config` generates the manifests, `ci` installs and builds
-from them, and `dev` syncs them to your host for local work. Stacks derive the package name from
+The merged calculation DAG derives target-specific manifests and tool configuration. Its `config`
+facet materializes projections, `ci` executes them, and `dev` syncs the editing projection to the
+host. Stacks derive the package name from
 `import.meta.dagr.location`: `//packages/ui` becomes `@internal/ui`, while nested paths are
 flattened, so `//packages/a/b` becomes `@internal/a-b`. Dependencies use `{ pkg, at }` for
 logical packages and `{ npm, at }` for registry packages, for example
@@ -113,7 +113,7 @@ cd packages/ui && pnpm exec vite
 | Package | Stack | Description |
 |---|---|---|
 | `packages/base` | — | Shared `node:22-alpine` + pnpm base image |
-| `packages/common` | ts-lib | Shared contracts and types |
-| `packages/app` | ts-executable | Cloudflare Worker |
-| `packages/ui` | ts-ui | React/Vite frontend (deployed to `docs/`) |
+| `packages/common` | TypeScript library | Shared contracts and types |
+| `packages/app` | Cloudflare Worker | Worker application |
+| `packages/ui` | Vite React | Frontend deployed to `docs/` |
 | `packages/client` | — | oRPC client — not currently in the build graph (no `dagr.index.js`) |

@@ -5,6 +5,7 @@ pnpm: '11.20.0'
 
 deps:
   '@cloudflare/workers-types': '4.20250620.0'
+  '@eslint/js': '8.57.0'
   '@caeus/wyr': '0.0.0-rc1'
   '@orpc/client': '1.14.14'
   '@orpc/contract': '1.14.14'

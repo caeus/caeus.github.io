@@ -1,9 +1,7 @@
-import { stack } from '//stacks/dagr.ts-executable.js'
-import { INTERNAL_SCOPE } from '//lib/dagr.scope.js'
+import { typescriptWorker } from '//stacks/dagr.typescript.js'
 
-export default stack({
+export default typescriptWorker({
   location: import.meta.dagr.location,
-  scope: INTERNAL_SCOPE,
   version: '0.1.0',
   deps: [
     { pkg: '//packages/common', at: 'prod' },

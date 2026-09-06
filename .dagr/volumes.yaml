@@ -1,0 +1,9 @@
+"github.com/caeus/dagr-stacks/typescript":
+  FROM: ghcr.io/caeus/dagr-stacks-typescript:5ba7b579ace7f403667a4b2e9b43cd0f6ab4ccee
+  steps: []
+  IGNORE: []
+
+"github.com/caeus/dagr-stacks/di":
+  FROM: ghcr.io/caeus/dagr-stacks-di:7de90f567348a68cdbff0968757d7f49096b1aab
+  steps: []
+  IGNORE: []

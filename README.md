@@ -4,7 +4,7 @@ Personal site + monorepo. Deployed to GitHub Pages from `docs/`.
 
 ## Build system
 
-This repo uses **dagr** — a Docker-based task runner defined via `dagr.index.js` files. Every package declares facets of targets; targets have dependencies, a Dockerfile-like `run` definition, and an optional `EXPORT` map to materialize files back to the host. Full documentation lives in the [dagr repo](https://github.com/caeus/dagr/tree/main/engine/docs).
+This repo uses **dagr**, a Docker-based task runner defined via `dagr.index.js` files. Every package declares facets of targets; targets have dependencies, a Dockerfile-like `run` definition, and an optional `EXPORT` map to materialize files back to the host. Full documentation lives in the [dagr repo](https://github.com/caeus/dagr/tree/main/engine/docs).
 
 ### Running `dagr`
 
@@ -34,17 +34,17 @@ dagr run //<package>:<facet>:<target>  # run a specific target
 Examples:
 
 ```sh
-dagr run //packages/ui:ci:install      # install node_modules (exports to host)
+dagr run //packages/ui:dev:install     # install host-compatible node_modules
 dagr run //packages/ui:ci:typecheck    # type-check
 dagr run //packages/ui:ci:build        # vite production build
 dagr run //packages/common:ci:pack     # tarball the library for local consumers
-dagr run //:ci:deploy                 # build ui and deploy to docs/
+dagr run //:ci:deploy                  # build ui and deploy to docs/
 ```
 
 ### `dagr.index.js` format
 
 A `dagr.index.js` default-exports facets of targets. See
-[03 — Authoring `dagr.index.js`](https://github.com/caeus/dagr/blob/main/engine/docs/03-authoring-dagr-index-js.md)
+[03 - Authoring `dagr.index.js`](https://github.com/caeus/dagr/blob/main/engine/docs/03-authoring-dagr-index-js.md)
 for the full schema and every step kind.
 
 ```js
@@ -57,14 +57,14 @@ export default {
         '<package>:<facet>:<target>',   // cross-package
       ],
       run: ({ images }) => ({
-        FROM: images['<target>'],       // a dep's image tag, or a registry ref
+        FROM: images['<target>'],
         steps: [
           { WORKDIR: '/repo' },
           { COPY: { src: 'src', dest: '/repo/src' } },
           { RUN: 'pnpm install' },
         ],
-        IGNORE: ['node_modules', '.git'],  // the target's .dockerignore
-        EXPORT: { '/repo/dist': 'dist' },  // image path → path under the package dir
+        IGNORE: ['node_modules', '.git'],
+        EXPORT: { '/repo/dist': 'dist' },
       }),
     },
   },
@@ -73,38 +73,41 @@ export default {
 
 ### Shared build logic
 
-Rather than repeating targets per package, the facets come from factories in `stacks/`, with
-primitives in `lib/`. Each package's `dagr.index.js` is a few lines of declaration.
+The repository mounts the `typescript` component from `caeus/dagr-stacks` and pins its immutable
+filesystem image in the root volume registry. Package `dagr.index.js` files contain package facts and
+dependencies; the stack derives manifests, tool configuration, and targets.
 
 | Path | Contents |
 |---|---|
-| `lib/dagr.versions.yaml` | Single source of truth for dependency versions |
-| `lib/dagr.file_utils.js` | `writeText`/`writeJson`/`writeYaml` — generate a file as a build step |
-| `lib/dagr.dockerignore.js` | `RECOMMENDED_IGNORE`, the default build-context exclusions |
-| `stacks/dagr.ts-lib.js` | `stack` for libraries — config, ci (install/build/pack/typecheck), dev |
-| `stacks/dagr.ts-ui.js` | `stack` for the Vite frontend |
-| `stacks/dagr.ts-executable.js` | `stack` for the Worker |
-| `stacks/dagr.utils.js` | `buildPackageJson`, `pnpmfile` helpers |
+| `.dagr/config.js` | Maps mount requests to global volume IDs |
+| `.dagr/volumes.yaml` | Pins implementations for the TypeScript and nested DI volumes |
+| `lib/dagr.versions.yaml` | Repository dependency version policy |
+| `lib/dagr.dockerignore.js` | Repository build-context exclusions |
+| `stacks/ts/dagr.mount.yaml` | Requests the shared TypeScript stack volume |
+| `stacks/dagr.typescript.js` | Repository policy plus library, Worker, and UI compositions |
 
-Each stack returns three facets: `config` generates the manifests, `ci` installs and builds
-from them, and `dev` syncs them to your host for local work. Stacks derive the package name from
-`import.meta.dagr.location`: `//packages/ui` becomes `@internal/ui`, while nested paths are
-flattened, so `//packages/a/b` becomes `@internal/a-b`. Dependencies use `{ pkg, at }` for
-logical packages and `{ npm, at }` for registry packages, for example
-`{ pkg: '//packages/common', at: 'prod' }` and `{ npm: 'zod', at: 'prod' }`.
+The TypeScript stack is a calculation DAG. It derives target-specific manifests and tool
+configuration from package facts, repository policy, and selected capabilities. Generated
+`package.json`, TypeScript, Prettier, ESLint, Vite, and Vitest files are outputs rather than checked-in
+project truth.
+
+Stacks derive the package name from `import.meta.dagr.location`: `//packages/ui` becomes
+`@internal/ui`, while nested paths are flattened, so `//packages/a/b` becomes `@internal/a-b`.
+Dependencies use `{ pkg, at }` for logical packages and `{ npm, at }` for registry packages, for
+example `{ pkg: '//packages/common', at: 'prod' }` and `{ npm: 'zod', at: 'prod' }`.
+
 Each library's `ci:pack` output contains its own tarball and the complete transitive closure of local
-package tarballs. Consumers copy that closure and rewrite every `@internal/*` dependency to its
-local tarball during installation.
+package tarballs. Consumers copy that closure and rewrite local package dependencies to their tarballs
+during installation.
 
 ### Local development
 
-The containerized `ci:install` produces a Linux `node_modules`, which can't run vite on macOS.
-So local dev generates the manifests and lets your host do the install:
+The stack can generate host-compatible dependencies directly:
 
 ```sh
-dagr run //:dev:sync                  # root pnpm-workspace.yaml + package.json
-dagr run //packages/ui:dev:sync        # per-package manifests
-pnpm install                       # from the repo root — platform-correct binaries
+dagr run //:dev:sync
+dagr run //packages/ui:dev:sync
+dagr run //packages/ui:dev:install
 cd packages/ui && pnpm exec vite
 ```
 
@@ -112,8 +115,8 @@ cd packages/ui && pnpm exec vite
 
 | Package | Stack | Description |
 |---|---|---|
-| `packages/base` | — | Shared `node:22-alpine` + pnpm base image |
-| `packages/common` | ts-lib | Shared contracts and types |
-| `packages/app` | ts-executable | Cloudflare Worker |
-| `packages/ui` | ts-ui | React/Vite frontend (deployed to `docs/`) |
-| `packages/client` | — | oRPC client — not currently in the build graph (no `dagr.index.js`) |
+| `packages/base` | - | Shared `node:22-alpine` + pnpm base image |
+| `packages/common` | TypeScript library | Shared contracts and types |
+| `packages/app` | Cloudflare Worker | Worker application |
+| `packages/ui` | Vite React | Frontend deployed to `docs/` |
+| `packages/client` | - | oRPC client, not currently in the build graph (no `dagr.index.js`) |

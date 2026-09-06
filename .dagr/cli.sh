@@ -1,30 +1,35 @@
 #!/bin/sh
 set -e
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+DAGR_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$DAGR_DIR/.." && pwd)"
+IMAGE="ghcr.io/caeus/dagr:38a49656ab2bdc31add08df08256b4ed4ed9e867"
+TARGET_PLATFORM="${DOCKER_DEFAULT_PLATFORM:-}"
+unset DOCKER_DEFAULT_PLATFORM
 
-# dagr runs inside an Alpine container, so it cannot see the real platform. Detect it here
-# and pass it in, normalised to the values Node and package.json use.
 HOST_OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 case "$(uname -m)" in
   arm64 | aarch64) HOST_ARCH=arm64 ;;
   x86_64 | amd64) HOST_ARCH=x64 ;;
   *) HOST_ARCH="$(uname -m)" ;;
 esac
-# Only Linux has a libc distinction, so elsewhere the variable is not passed at all rather than
-# passed empty — dagr should see an absent value, not a blank one.
 LIBC_ENV=""
 if [ "$HOST_OS" = linux ]; then
   if ldd --version 2>&1 | grep -qi musl; then LIBC_ENV="-e HOST_LIBC=musl"; else LIBC_ENV="-e HOST_LIBC=glibc"; fi
 fi
 
-docker build -t dagr "$REPO_ROOT/.dagr"
-docker run --rm \
+PLATFORM_ENV=""
+if [ -n "$TARGET_PLATFORM" ]; then PLATFORM_ENV="-e DOCKER_DEFAULT_PLATFORM=$TARGET_PLATFORM"; fi
+
+docker run --rm --pull=missing \
   -v "$REPO_ROOT:/repo" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -e HOST_REPO_ROOT="$REPO_ROOT" \
+  -e MOUNT_ROOT=/tmp/dagr-mounts \
+  -e CLEAN_MOUNT_ROOT=1 \
   -e WORKING_DIR="${WORKING_DIR:-$REPO_ROOT}" \
   -e HOST_OS="$HOST_OS" \
   -e HOST_ARCH="$HOST_ARCH" \
   $LIBC_ENV \
-  dagr "$@"
+  $PLATFORM_ENV \
+  "$IMAGE" "$@"

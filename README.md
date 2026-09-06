@@ -4,17 +4,17 @@ Personal site + monorepo. Deployed to GitHub Pages from `docs/`.
 
 ## Build system
 
-This repo uses **dagr** — a Docker-based task runner defined via `dagr.index.js` files. Every package declares facets of targets; targets have dependencies, a Dockerfile-like `run` definition, and an optional `EXPORT` map to materialize files back to the host. Full documentation lives in the [dagr repo](https://github.com/caeus/dagr/tree/main/docs).
+This repo uses **dagr** — a Docker-based task runner defined via `dagr.index.js` files. Every package declares facets of targets; targets have dependencies, a Dockerfile-like `run` definition, and an optional `EXPORT` map to materialize files back to the host. Full documentation lives in the [dagr repo](https://github.com/caeus/dagr/tree/main/engine/docs).
 
 ### Running `dagr`
 
-dagr's source is not vendored here. `.dagr/Dockerfile` clones [caeus/dagr](https://github.com/caeus/dagr) at a pinned commit and compiles it inside the image, so Docker is the only prerequisite:
+dagr runs from a published image pinned in `.dagr/cli.sh`, so Docker is the only prerequisite:
 
 ```sh
 ./.dagr/cli.sh list
 ```
 
-Upgrading dagr means bumping that pinned SHA — it is part of the layer's cache key, so nothing else has to change.
+Upgrading dagr means bumping that image pin.
 
 Optionally put the launcher on your `PATH`, which lets you run `dagr` from any subdirectory and have the current package inferred:
 
@@ -44,7 +44,7 @@ dagr run //:ci:deploy                 # build ui and deploy to docs/
 ### `dagr.index.js` format
 
 A `dagr.index.js` default-exports facets of targets. See
-[03 — Authoring `dagr.index.js`](https://github.com/caeus/dagr/blob/main/docs/03-authoring-dagr-index-js.md)
+[03 — Authoring `dagr.index.js`](https://github.com/caeus/dagr/blob/main/engine/docs/03-authoring-dagr-index-js.md)
 for the full schema and every step kind.
 
 ```js

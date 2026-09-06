@@ -1,5 +1,6 @@
 import typescript, {
   cloudflareWorker,
+  di,
   eslint,
   library,
   prettier,
@@ -17,16 +18,29 @@ const repository = typescript({
   ignore: RECOMMENDED_IGNORE,
 })
 
+const sourceImports = di.module({
+  importAlias: di.toFun(
+    ['sourceDirectory'],
+    directory => ({
+      specifier: '#*',
+      sourcePath: `./${directory}/*`,
+      runtimePath: `./${directory}/*`,
+    }),
+  ),
+})
+
 export const typescriptLibrary = repository
   .with(library())
   .with(prettier())
 
 export const typescriptWorker = repository
   .with(cloudflareWorker())
+  .with(sourceImports)
   .with(prettier())
 
 export const typescriptUi = repository
   .with(viteReact())
+  .with(sourceImports)
   .with(prettier())
   .with(eslint())
   .with(vitest({ environment: 'jsdom' }))

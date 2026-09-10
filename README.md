@@ -34,7 +34,7 @@ dagr run //<package>:<facet>:<target>  # run a specific target
 Examples:
 
 ```sh
-dagr run //packages/ui:dev:install     # install host-compatible node_modules
+dagr run //packages/ui:dev:sync        # write generated files onto the host
 dagr run //packages/ui:ci:typecheck    # type-check
 dagr run //packages/ui:ci:build        # vite production build
 dagr run //packages/common:ci:pack     # tarball the library for local consumers
@@ -73,25 +73,26 @@ export default {
 
 ### Shared build logic
 
-The repository mounts the `typescript` component from `caeus/dagr-stacks` and pins its immutable
-filesystem image in the root volume registry. Package `dagr.index.js` files contain package facts and
-dependencies; the stack derives manifests, tool configuration, and targets.
+The repository mounts the `typescript` recipe from `caeus/dagr` and pins its immutable filesystem
+image in the root volume registry. Package `dagr.index.js` files contain package facts and
+dependencies; the recipe derives manifests, tool configuration, and targets.
 
 | Path | Contents |
 |---|---|
 | `.dagr/config.js` | Maps mount requests to global volume IDs |
-| `.dagr/volumes.yaml` | Pins implementations for the TypeScript and nested DI volumes |
+| `.dagr/volumes.yaml` | Pins implementations for the TypeScript recipe and nested RDK volumes |
 | `lib/dagr.versions.yaml` | Repository dependency version policy |
 | `lib/dagr.dockerignore.js` | Repository build-context exclusions |
-| `stacks/ts/dagr.mount.yaml` | Requests the shared TypeScript stack volume |
+| `stacks/ts/dagr.mount.yaml` | Requests the shared TypeScript recipe volume |
 | `stacks/dagr.typescript.js` | Repository policy plus library, Worker, and UI compositions |
 
-The TypeScript stack is a calculation DAG. It derives target-specific manifests and tool
-configuration from package facts, repository policy, and selected capabilities. Generated
-`package.json`, TypeScript, Prettier, ESLint, Vite, and Vitest files are outputs rather than checked-in
-project truth.
+The TypeScript recipe is one immutable graph of bindings addressed by semantic paths. Each composition
+is a flat list of features whose bindings merge right-biased, so a later entry replaces an earlier
+one. It derives target-specific manifests and tool configuration from package facts, repository
+policy, and selected features. Generated `package.json`, TypeScript, Prettier, ESLint, Vite, and
+Vitest files are outputs rather than checked-in project truth.
 
-Stacks derive the package name from `import.meta.dagr.location`: `//packages/ui` becomes
+Recipes derive the package name from `import.meta.dagr.location`: `//packages/ui` becomes
 `@internal/ui`, while nested paths are flattened, so `//packages/a/b` becomes `@internal/a-b`.
 Dependencies use `{ pkg, at }` for logical packages and `{ npm, at }` for registry packages, for
 example `{ pkg: '//packages/common', at: 'prod' }` and `{ npm: 'zod', at: 'prod' }`.
@@ -102,18 +103,24 @@ during installation.
 
 ### Local development
 
-The stack can generate host-compatible dependencies directly:
+`dev:sync` writes the generated files onto the host so an editor reads what a container builds with.
+It deliberately does not install: a dependency tree resolved inside a Linux image is the wrong one for
+a host, so the host runs its own install afterwards.
 
 ```sh
 dagr run //:dev:sync
 dagr run //packages/ui:dev:sync
-dagr run //packages/ui:dev:install
+pnpm install
 cd packages/ui && pnpm exec vite
 ```
 
+`dev:sync` copies local package dependencies in as tarballs, so `packages/ui` consumes a snapshot of
+`packages/common` rather than a live link. Re-run the sync and install after changing a local
+dependency.
+
 ## Packages
 
-| Package | Stack | Description |
+| Package | Composition | Description |
 |---|---|---|
 | `packages/base` | - | Shared `node:22-alpine` + pnpm base image |
 | `packages/common` | TypeScript library | Shared contracts and types |

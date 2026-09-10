@@ -10,15 +10,15 @@ importers:
 
   packages/app:
     dependencies:
-      '@caeus/common':
-        specifier: '>=0.0.0'
-        version: link:../common
-      '@orpc/server':
-        specifier: 1.14.14
-        version: 1.14.14
       '@caeus/wyr':
         specifier: 0.0.0-rc1
         version: 0.0.0-rc1
+      '@internal/common':
+        specifier: file:./common.tgz
+        version: file:packages/app/common.tgz(@orpc/server@1.14.14)
+      '@orpc/server':
+        specifier: 1.14.14
+        version: 1.14.14
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 4.20250620.0
@@ -26,6 +26,9 @@ importers:
       '@tsconfig/strictest':
         specifier: 2.0.8
         version: 2.0.8
+      prettier:
+        specifier: 3.2.5
+        version: 3.2.5
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -48,15 +51,21 @@ importers:
       '@tsconfig/strictest':
         specifier: 2.0.8
         version: 2.0.8
+      prettier:
+        specifier: 3.2.5
+        version: 3.2.5
       typescript:
         specifier: 6.0.3
         version: 6.0.3
 
   packages/ui:
     dependencies:
-      '@caeus/common':
-        specifier: '>=0.0.0'
-        version: link:../common
+      '@caeus/wyr':
+        specifier: 0.0.0-rc1
+        version: 0.0.0-rc1
+      '@internal/common':
+        specifier: file:./common.tgz
+        version: file:packages/ui/common.tgz(@orpc/server@1.14.14)
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(vite@5.3.1(@types/node@26.2.0)(lightningcss@1.32.0))
@@ -87,13 +96,13 @@ importers:
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
-      '@caeus/wyr':
-        specifier: 0.0.0-rc1
-        version: 0.0.0-rc1
       zod:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
+      '@eslint/js':
+        specifier: 8.57.0
+        version: 8.57.0
       '@tsconfig/strictest':
         specifier: 2.0.8
         version: 2.0.8
@@ -227,6 +236,9 @@ packages:
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
+
+  '@caeus/wyr@0.0.0-rc1':
+    resolution: {integrity: sha512-uDEpjJv7Jh+L9cC65kf8aPlszvIXvguAiGr3ozC1MjfmlbpJo87v0M0UPfh7PchXDuUVrjYgzj85yVNgQnxonw==}
 
   '@cloudflare/kv-asset-handler@0.4.0':
     resolution: {integrity: sha512-+tv3z+SPp+gqTIcImN9o0hqE9xyfQjI1XD9pL6NuKjua9B1y7mNYv0S9cP+QEbA4ppVgGZEmKOvHX5G5Ei1CVA==}
@@ -765,6 +777,14 @@ packages:
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [win32]
+
+  '@internal/common@file:packages/app/common.tgz':
+    resolution: {integrity: sha512-vXOmYBOd6i5g/X2Ox2PpB+AqoNm2hR0EfEzh20M0ZftUBSg0tztixF6yjvb4SyxXiP4wgJ4CsOeqYGR8grjqxQ==, tarball: file:packages/app/common.tgz}
+    version: 0.1.0
+
+  '@internal/common@file:packages/ui/common.tgz':
+    resolution: {integrity: sha512-vXOmYBOd6i5g/X2Ox2PpB+AqoNm2hR0EfEzh20M0ZftUBSg0tztixF6yjvb4SyxXiP4wgJ4CsOeqYGR8grjqxQ==, tarball: file:packages/ui/common.tgz}
+    version: 0.1.0
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2502,9 +2522,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  '@caeus/wyr@0.0.0-rc1':
-    resolution: {integrity: sha512-uDEpjJv7Jh+L9cC65kf8aPlszvIXvguAiGr3ozC1MjfmlbpJo87v0M0UPfh7PchXDuUVrjYgzj85yVNgQnxonw==}
-
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
@@ -2663,6 +2680,8 @@ snapshots:
   '@bramus/specificity@2.4.2':
     dependencies:
       css-tree: 3.2.1
+
+  '@caeus/wyr@0.0.0-rc1': {}
 
   '@cloudflare/kv-asset-handler@0.4.0':
     dependencies:
@@ -2981,6 +3000,30 @@ snapshots:
 
   '@img/sharp-win32-x64@0.33.5':
     optional: true
+
+  '@internal/common@file:packages/app/common.tgz(@orpc/server@1.14.14)':
+    dependencies:
+      '@orpc/contract': 1.14.14
+      '@orpc/zod': 1.14.14(@orpc/contract@1.14.14)(@orpc/server@1.14.14)(zod@4.4.3)
+      zod: 4.4.3
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@orpc/server'
+      - crossws
+      - fastify
+      - ws
+
+  '@internal/common@file:packages/ui/common.tgz(@orpc/server@1.14.14)':
+    dependencies:
+      '@orpc/contract': 1.14.14
+      '@orpc/zod': 1.14.14(@orpc/contract@1.14.14)(@orpc/server@1.14.14)(zod@4.4.3)
+      zod: 4.4.3
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@orpc/server'
+      - crossws
+      - fastify
+      - ws
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -4941,8 +4984,6 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.18.0: {}
-
-  '@caeus/wyr@0.0.0-rc1': {}
 
   xml-name-validator@5.0.0: {}
 

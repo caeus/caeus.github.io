@@ -1,9 +1,9 @@
-"github.com/caeus/dagr-stacks/typescript":
-  FROM: ghcr.io/caeus/dagr-stacks-typescript:5ba7b579ace7f403667a4b2e9b43cd0f6ab4ccee
+"github.com/caeus/dagr-recipes/typescript":
+  FROM: ghcr.io/caeus/dagr-ts-recipes:54f3b88bc5feea66220aa39b39a37f98d37a8c4c
   steps: []
   IGNORE: []
 
-"github.com/caeus/dagr-stacks/di":
-  FROM: ghcr.io/caeus/dagr-stacks-di:7de90f567348a68cdbff0968757d7f49096b1aab
+"github.com/caeus/dagr-recipes/rdk":
+  FROM: ghcr.io/caeus/dagr-rdk:4d04440e984307f992164b38059c1c493b09b884
   steps: []
   IGNORE: []

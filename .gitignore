@@ -39,6 +39,7 @@ TODO.md
 /package.json
 /pnpm-workspace.yaml
 /packages/*/package.json
+/packages/*/*.tgz
 /packages/*/tsconfig.json
 /packages/*/.prettierrc.json
 /packages/*/eslint.config.mjs

@@ -2,8 +2,6 @@ import versions from '//lib/dagr.versions.yaml'
 import { writeJson, writeYaml } from '//lib/dagr.file_utils.js'
 import { RECOMMENDED_IGNORE } from '//lib/dagr.dockerignore.js'
 
-const BASE = '//packages/base:ci:node-pnpm'
-
 // Members are listed explicitly rather than globbed: packages/base has no package.json,
 // and packages/client is parked with a stale pre-dagr manifest.
 // allowBuilds is the union of what the member stacks need; without it a host-side
@@ -30,43 +28,52 @@ const ROOT_PACKAGE_JSON = {
   packageManager: `pnpm@${versions.pnpm}`,
 }
 
-const MANIFESTS = ['pnpm-workspace.yaml', 'package.json']
+const manifest = (path, step) => ({
+  deps: {},
+  run: () => ({
+    build: {
+      FROM: 'alpine:3.22',
+      steps: [{ WORKDIR: '/repo' }, step],
+      IGNORE: RECOMMENDED_IGNORE,
+      path,
+    },
+  }),
+})
 
 export default {
-  config: {
-    manifest: {
-      deps: [BASE],
-      run: ({ images: deps }) => ({
-        FROM: deps[BASE],
+  '/file/dev/pnpm-workspace.yaml': manifest(
+    '/repo/pnpm-workspace.yaml',
+    writeYaml('/repo/pnpm-workspace.yaml', WORKSPACE),
+  ),
+  '/file/dev/package.json': manifest(
+    '/repo/package.json',
+    writeJson('/repo/package.json', ROOT_PACKAGE_JSON),
+  ),
+  '/dev/sync': {
+    deps: { files: '/file/dev/*' },
+    run: ({ files }) => ({
+      build: {
+        FROM: 'alpine:3.22',
         steps: [
           { WORKDIR: '/repo' },
-          writeYaml('/repo/pnpm-workspace.yaml', WORKSPACE),
-          writeJson('/repo/package.json', ROOT_PACKAGE_JSON),
+          ...Object.values(files).map(file => ({
+            COPY: { from: file.image, src: file.path, dest: file.path },
+          })),
         ],
         IGNORE: RECOMMENDED_IGNORE,
-      })
-    }
+        EXPORT: { '/repo/': './' },
+      },
+    }),
   },
-  dev: {
-    sync: {
-      deps: ['config:manifest'],
-      run: ({ images: deps }) => ({
-        FROM: deps['config:manifest'],
-        steps: [],
-        IGNORE: RECOMMENDED_IGNORE,
-        EXPORT: Object.fromEntries(MANIFESTS.map(f => [`/repo/${f}`, f])),
-      })
-    }
-  },
-  ci: {
-    deploy: {
-      deps: ['//packages/ui:ci:build'],
-      run: ({ images: deps }) => ({
-        FROM: deps['//packages/ui:ci:build'],
+  '/deploy': {
+    deps: { ui: '//packages/ui:/ui/build' },
+    run: ({ ui }) => ({
+      build: {
+        FROM: ui,
         steps: [],
         IGNORE: RECOMMENDED_IGNORE,
         EXPORT: { '/repo/dist': 'docs' },
-      })
-    }
-  }
+      },
+    }),
+  },
 }

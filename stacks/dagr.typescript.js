@@ -1,11 +1,10 @@
 import {
   cloudflareWorker,
   copyFiles,
-  derive,
   eslint,
-  file,
   library,
   packageJsonDependencies,
+  packageManagerBuilds,
   pnpm,
   prettier,
   scope,
@@ -13,7 +12,6 @@ import {
   typescript,
   viteReact,
   vitest,
-  writeText,
 } from '//stacks/ts//dagr.recipe.js'
 import { copyLocalPackages } from '//stacks/ts//dagr.model.js'
 import versions from '//lib/dagr.versions.yaml'
@@ -57,19 +55,6 @@ const hostFiles = name => scope(name, {
   },
 })
 
-// Source code uses package imports such as #articles/...; that is a site
-// convention, not a requirement of the shared recipe.
-const sourceImports = name => scope(name, {
-  '/source/import-alias': derive(
-    { source: '/source/directory' },
-    ({ source }) => ({
-      specifier: '#*',
-      sourcePath: `./${source}/*`,
-      runtimePath: `./${source}/*`,
-    }),
-  ),
-})
-
 const uiConfiguration = name => scope(name, {
   '/ui/types/tooling': tooling({ packages: ['@types/react', '@types/react-dom'] }),
   '/ui/types/package-json/dependencies': packageJsonDependencies('/ui/types/tooling'),
@@ -82,25 +67,7 @@ const uiConfiguration = name => scope(name, {
     builds: ['esbuild'],
   }),
 
-  ...file('/repo/vite.config.ts', { source: '/source/directory' }, {
-    for: ['dev', 'test', 'build'],
-    render(_context, { source }) {
-      return writeText('/repo/vite.config.ts', `import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: [
-      { find: /^#(.*)$/, replacement: fileURLToPath(new URL('./${source}/', import.meta.url)) + '$1' },
-    ],
-  },
-})
-`)
-    },
-  }),
 })
 
 export const typescriptLibrary = (name, declaration) => ({
@@ -112,7 +79,10 @@ export const typescriptLibrary = (name, declaration) => ({
 export const typescriptWorker = (name, declaration) => ({
   ...common(name, declaration),
   ...cloudflareWorker(name),
-  ...sourceImports(name),
+  ...scope(name, {
+    '/wrangler/tooling': tooling({ builds: ['esbuild'] }),
+    '/wrangler/package-manager/builds': packageManagerBuilds('/wrangler/tooling'),
+  }),
   ...hostFiles(name),
 })
 
@@ -121,7 +91,6 @@ export const typescriptUi = (name, declaration) => ({
   ...viteReact(name),
   ...vitest(name, { environment: 'jsdom' }),
   ...eslint(name),
-  ...sourceImports(name),
   ...uiConfiguration(name),
   ...hostFiles(name),
 })

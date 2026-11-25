@@ -38,11 +38,11 @@ jobs:
 
           printf 'Running %d node(s):\n' "${#targets[@]}"
           printf '  %s\n' "${targets[@]}"
-          ./.dagr/cli.sh run "${targets[@]}"
+          ./.dagr/cli.sh run --verbose "${targets[@]}"
 
       - name: Check generated host workspace
         run: |
-          ./.dagr/cli.sh run //:/dev/sync \
+          ./.dagr/cli.sh run --verbose //:/dev/sync \
             //packages/common:/common/dev/hoist \
             //packages/app:/app/dev/hoist \
             //packages/ui:/ui/dev/hoist

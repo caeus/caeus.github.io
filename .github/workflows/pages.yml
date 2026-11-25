@@ -26,7 +26,7 @@ jobs:
 
       - name: Build
         run: |
-          ./.dagr/cli.sh run //:/deploy
+          ./.dagr/cli.sh run --verbose //:/deploy
           test -f docs/index.html
 
       - name: Upload GitHub Pages artifact

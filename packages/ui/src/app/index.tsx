@@ -2,7 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import type { Layout } from './Layout'
 import type { ArticlesPage } from './ArticlesPage'
 import type { OssPage } from './OssPage'
-import type { ResumePage } from '#resume/ResumePage'
+import type { ResumePage } from '#/resume/ResumePage'
 
 export const connectApp = (Layout: Layout, ArticlesPage: ArticlesPage, OssPage: OssPage, ResumePage: ResumePage) => () => (
   <HashRouter>

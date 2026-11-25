@@ -2,6 +2,9 @@ name: Tests
 
 on:
   pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Discover and run test targets
+      - name: Discover and run test and typecheck nodes
         shell: bash
         run: |
           ./.dagr/cli.sh list | tee /tmp/dagr-targets.txt
@@ -22,15 +25,35 @@ jobs:
             awk '{
               target = $0
               sub(/\[.*/, "", target)
-              if (target ~ /:ci:test$/) print target
+              if (target ~ /\/(test|typecheck)$/) print target
             }' /tmp/dagr-targets.txt
           )
-
-          if ((${#targets[@]} == 0)); then
-            echo 'No :ci:test targets found' >&2
+          if ! printf '%s\n' "${targets[@]}" | grep -q '/test$'; then
+            echo 'No test nodes found' >&2
             exit 1
           fi
+          for name in common app ui; do
+            printf '%s\n' "${targets[@]}" | grep -Fxq "//packages/$name:/$name/typecheck"
+          done
 
-          printf 'Running %d test target(s):\n' "${#targets[@]}"
+          printf 'Running %d node(s):\n' "${#targets[@]}"
           printf '  %s\n' "${targets[@]}"
-          ./.dagr/cli.sh run "${targets[@]}"
+          ./.dagr/cli.sh run --verbose "${targets[@]}"
+
+      - name: Check generated host workspace
+        run: |
+          ./.dagr/cli.sh run --verbose //:/dev/sync \
+            //packages/common:/common/dev/hoist \
+            //packages/app:/app/dev/hoist \
+            //packages/ui:/ui/dev/hoist
+          test -f pnpm-workspace.yaml
+          test -f package.json
+          for name in common app ui; do
+            test -f "packages/$name/package.json"
+            test -f "packages/$name/tsconfig.json"
+            test ! -e "packages/$name/pnpm-workspace.yaml"
+          done
+          test -f packages/app/common.tgz
+          test -f packages/ui/common.tgz
+          test -f packages/ui/vite.config.ts
+          test -f packages/ui/vitest.config.ts

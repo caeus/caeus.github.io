@@ -1,6 +1,6 @@
 import Markdown from 'react-markdown'
-import { Card, CardContent, CardHeader } from '#components/ui/card'
-import { Separator } from '#components/ui/separator'
+import { Card, CardContent, CardHeader } from '#/components/ui/card'
+import { Separator } from '#/components/ui/separator'
 
 export const connectResumePage = (content: string) => () => (
   <Card>

@@ -1,10 +1,9 @@
 import { typescriptWorker } from '//stacks/dagr.typescript.js'
 
-export default typescriptWorker({
-  location: import.meta.dagr.location,
+export default typescriptWorker('app', {
   version: '0.1.0',
   deps: [
-    { pkg: '//packages/common', at: 'prod' },
+    { name: '@internal/common', target: '//packages/common:/common/pack', at: 'prod' },
     { npm: '@orpc/server', at: 'prod' },
     { npm: '@caeus/wyr', at: 'prod' },
   ]

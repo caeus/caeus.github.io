@@ -1,82 +1,96 @@
-import recipe, {
+import {
   cloudflareWorker,
+  copyFiles,
   eslint,
-  file,
-  hostDev,
   library,
+  packageJsonDependencies,
+  packageManagerBuilds,
   pnpm,
   prettier,
-  rdk,
-  requirement,
+  scope,
+  tooling,
   typescript,
   viteReact,
   vitest,
-  writeYaml,
 } from '//stacks/ts//dagr.recipe.js'
-import { DEVELOPMENT_INTENTS, requirementsOf } from '//stacks/ts//dagr.model.js'
+import { copyLocalPackages } from '//stacks/ts//dagr.model.js'
 import versions from '//lib/dagr.versions.yaml'
 import { INTERNAL_SCOPE } from '//lib/dagr.scope.js'
 import { RECOMMENDED_IGNORE } from '//lib/dagr.dockerignore.js'
 
-// pnpm() writes a package-level pnpm-workspace.yaml carrying allowBuilds, which a container install
-// needs. On the host it is harmful: pnpm treats any directory holding that file as a workspace root,
-// so it would detach each package from this repository's root workspace. The root workspace file,
-// written by //:config:manifest, already carries the union of these allowBuilds.
-const CONTAINER_ONLY_WORKSPACE_FILE = rdk.graph({
-  '/file/package-manager': file(['/requirement/**', '/version/catalog'], {
-    for: DEVELOPMENT_INTENTS,
-    render(context, requirements, catalog) {
-      if (context.host) return []
-      const { allowBuilds } = requirementsOf(requirements, context, catalog)
-      return allowBuilds.length === 0
-        ? []
-        : writeYaml('/repo/pnpm-workspace.yaml', {
-            allowBuilds: Object.fromEntries(allowBuilds.map(pkg => [pkg, true])),
-          })
-    },
-  }),
-})
-
-const COMMON = [
-  typescript({
-    base: '//packages/base:ci:node-pnpm',
+const common = (name, declaration) => ({
+  ...typescript(name, {
+    base: '//packages/base:/node-pnpm',
     scope: INTERNAL_SCOPE,
     versions: versions.deps,
     ignore: RECOMMENDED_IGNORE,
+    ...declaration,
   }),
-  pnpm(),
-  CONTAINER_ONLY_WORKSPACE_FILE,
-  hostDev(),
-]
-
-// The product features default to a `#/*` specifier. Repository source predates that and imports
-// `#articles/...`, so the bare `#*` form is restored after the feature that sets it.
-const SOURCE_IMPORTS = rdk.graph({
-  '/source/import-alias': rdk.derive(['/source/directory'], directory => ({
-    specifier: '#*',
-    sourcePath: `./${directory}/*`,
-    runtimePath: `./${directory}/*`,
-  })),
+  ...pnpm(name),
+  ...prettier(name),
 })
 
-export const typescriptLibrary = recipe([...COMMON, library(), prettier()])
-
-export const typescriptWorker = recipe([...COMMON, cloudflareWorker(), SOURCE_IMPORTS, prettier()])
-
-// Two type packages the upstream features stopped contributing. viteReact() dropped the React types,
-// and /requirement/vitest is gated to dev, test and lint, so neither JSX nor the test files that
-// tsconfig includes resolve during typecheck. Versions resolve from lib/dagr.versions.yaml.
-const MISSING_TYPES = rdk.graph({
-  '/requirement/react-types': requirement({ packages: ['@types/react', '@types/react-dom'] }),
-  '/requirement/vitest-typecheck': requirement({ for: ['typecheck'], packages: ['vitest'] }),
+// The repository owns one host workspace. Only top-level generated files belong
+// in each member; package-manager configuration is for isolated container builds.
+const hostFiles = name => scope(name, {
+  '/dev/hoist': {
+    deps: {
+      files: '/file/dev/*',
+      localPackages: '/package/local-dependencies',
+      localImages: '/package/local-images',
+      ignore: '/source/ignore',
+    },
+    run: ({ files, localPackages, localImages, ignore }) => ({
+      build: {
+        FROM: 'alpine:3.22',
+        steps: [
+          { WORKDIR: '/repo' },
+          ...copyLocalPackages(localPackages, localImages),
+          ...copyFiles(files),
+        ],
+        IGNORE: ignore,
+        EXPORT: { '/repo/': './' },
+      },
+    }),
+  },
 })
 
-export const typescriptUi = recipe([
-  ...COMMON,
-  viteReact(),
-  SOURCE_IMPORTS,
-  MISSING_TYPES,
-  prettier(),
-  eslint(),
-  vitest({ environment: 'jsdom' }),
-])
+const uiConfiguration = name => scope(name, {
+  '/ui/types/tooling': tooling({ packages: ['@types/react', '@types/react-dom'] }),
+  '/ui/types/package-json/dependencies': packageJsonDependencies('/ui/types/tooling'),
+
+  // Typechecking the UI includes its test files, so Vitest must be installed
+  // for that intent as well as when tests are executed.
+  '/vitest/tooling': tooling({
+    for: ['dev', 'test', 'lint', 'typecheck'],
+    packages: ['vitest', 'jsdom'],
+    builds: ['esbuild'],
+  }),
+
+
+})
+
+export const typescriptLibrary = (name, declaration) => ({
+  ...common(name, declaration),
+  ...library(name),
+  ...hostFiles(name),
+})
+
+export const typescriptWorker = (name, declaration) => ({
+  ...common(name, declaration),
+  ...cloudflareWorker(name),
+  ...scope(name, {
+    '/wrangler/tooling': tooling({ builds: ['esbuild'] }),
+    '/wrangler/package-manager/builds': packageManagerBuilds('/wrangler/tooling'),
+  }),
+  ...hostFiles(name),
+})
+
+export const typescriptUi = (name, declaration) => ({
+  ...common(name, declaration),
+  ...viteReact(name),
+  ...vitest(name, { environment: 'jsdom' }),
+  ...eslint(name),
+  ...uiConfiguration(name),
+  ...hostFiles(name),
+})

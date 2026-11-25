@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { ArticleFetcher, ArticleSample } from './articles-fetcher'
-import { run } from '#utils/index'
-import { Badge } from '#components/ui/badge'
-import { Separator } from '#components/ui/separator'
+import { run } from '#/utils/index'
+import { Badge } from '#/components/ui/badge'
+import { Separator } from '#/components/ui/separator'
 
 type State =
   | { status: 'loading' }
